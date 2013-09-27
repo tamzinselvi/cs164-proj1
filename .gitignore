@@ -1,0 +1,11 @@
+*.o
+apyc-*
+horn-*
+parser-sentinel
+horn
+.cproject
+.DS_Store
+apyc
+.depend
+.project
+.settings/

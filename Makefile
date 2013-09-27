@@ -19,6 +19,7 @@ APYC = $(shell echo `pwd`/apyc)
 default: compile
 
 compile:
+	$(MAKE) -C src parser-sentinel
 	$(MAKE) -C src compile
 
 check:
