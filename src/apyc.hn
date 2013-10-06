@@ -2,7 +2,7 @@
 
 /* apyc: Bison Parser */
 
-/* Authors: YOUR NAMES HERE */
+/* Authors: */
 
 %define semantic_tree_type "AST"
 
@@ -91,16 +91,15 @@
 
 %%
 
-program : stmt_list   { theTree = $^(MODULE, $*); $$ = NULL; }
+program : stmt_list*   { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
 
 /* REPLACE THE FOLLOWING WITH SOMETHING REAL. */
 
-stmt_list : print_stmt '\n'!
-    ;
+stmt_list : print_stmt '\n'!;
 
 print_stmt : "print"  expression_list 
-                      { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
+    { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
     ;
 
 expression_list :
@@ -111,6 +110,8 @@ expression_list :
 
 expression :
       INT_LITERAL
+    | STRING
+    | RAWSTRING
     ;
 
 /* Normally, throw away whitespace other than newline. */
@@ -118,13 +119,36 @@ expression :
 
 INT_LITERAL : ('1' .. '9') ('0' .. '9')* /* FIXME */;
 
-STRING : "\"\"" /* FIXME */ ;
+_OCTAL : ('0' .. '7') ;
 
-RAWSTRING : "r\"\"" /* FIXME */ ;
+_STRING1 :  _ANY - ('\n'| '\'' ) ;
+_STRING2 : _ANY - ( '\n' | '"' ) ;
 
+_STRING3 : _ANY - ('\\'|'\''|'"') ;
+_LONGSTRING_SINGLE : _STRING3 | '"' | '\n' | '\r';
+_LONGSTRING_DOUBLE : _STRING3 | '\'' | '\n' | '\r';
+_LONGSTRING1 : _LONGSTRING_SINGLE | _LONGSTRING_SINGLE '\'' | _LONGSTRING_SINGLE "''" | _LONGSTRING_SINGLE "\\'''" ;
+_LONGSTRING2 : _LONGSTRING_DOUBLE | _LONGSTRING_DOUBLE '"' | _LONGSTRING_DOUBLE "\"\""  ;
+
+_ESCAPESEQ : '\\' _ANY | '\\' _OCTAL _OCTAL? _OCTAL?;
+STRING : 
+      '\'' ( _STRING1 | _ESCAPESEQ )* '\''
+    | '"' ( _STRING2 | _ESCAPESEQ )* '"'
+    | "\"\"\"" ( _LONGSTRING2 | _ESCAPESEQ )* "\"\"\""
+    | "'''" ( _LONGSTRING1 | _ESCAPESEQ )* "'''"
+    ;
+  
+_RAWSTRINGPREFIX : "r" | "R" ;
+_RAWESCAPESEQ : '\\' _ANY ;
+RAWSTRING : 
+      _RAWSTRINGPREFIX '\'' ( _STRING1 | _RAWESCAPESEQ )* '\''
+    | _RAWSTRINGPREFIX '"' ( _STRING2 | _RAWESCAPESEQ )* '"'
+    | _RAWSTRINGPREFIX "\"\"\"" ( _LONGSTRING2 | _RAWESCAPESEQ )* "\"\"\""
+    | _RAWSTRINGPREFIX "'''" ( _LONGSTRING1 | _RAWESCAPESEQ )* "'''"
+    ;
 %%
 
-bool debugParser;
+bool debugParser = true;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)

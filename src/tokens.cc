@@ -67,14 +67,14 @@ private:
      *  escape sequences as necessary. */
     String_Token* post_make () {
         if (syntax () == RAWSTRING) {
-            literal_text = string (as_chars (), text_size ());
+            literal_text = string (as_chars () + 2, text_size () - 3);
         } else {
             int v;
             const char* s = as_chars ();
             size_t i;
-            i = 0;
+            i = 1;
             literal_text.clear ();
-            while (i < text_size ()) {
+            while (i < text_size () - 1) {
                 i += 1;
                 if (s[i-1] == '\\') {
                     i += 1;
