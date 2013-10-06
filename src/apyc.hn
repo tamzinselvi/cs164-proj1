@@ -114,6 +114,9 @@ expression :
     | RAWSTRING
     ;
 
+/* Handle indentation at the beginning of a line. */
+*: _BOL (' ' | '\t')* %prefer { cout << "x" << countIndent($TEXT) << " y " << $TEXT_SIZE; } ;
+
 /* Normally, throw away whitespace other than newline. */
 * : (' ' | '\t' | '\r')+ ;
 
@@ -189,4 +192,19 @@ parse (FILE* f, const string& name)
     if (theTree != NULL) {
         theTree->print (cout, 0);
     }
+}
+
+int
+countIndent (const char* text)
+{
+    int size = strlen(text);
+    int blnks = 0;
+    for(int i = 0; i < size; i++) {
+        switch (text[i] ) {
+        default: break;
+        case ' ': blnks += 1; break;
+        case '\t': blnks += 8 - (blnks % 8); break;
+        }
+    }
+    return blnks;
 }
