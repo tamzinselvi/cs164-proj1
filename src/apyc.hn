@@ -94,7 +94,7 @@
 
 %%
 
-program : stamt_list* { theTree = $^(MODULE, $*); $$ = NULL; }
+program : (input_input | eval_input | interactive_input | file_input) { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
 
 /* Grammar */
@@ -113,13 +113,13 @@ identifier : ID
 letter : lowercase | uppercase
        ;
 
-lowercase : _LOWER
+lowercase : LOWER
           ;
 
-uppercase : _UPPER
+uppercase : UPPER
           ;
 
-digit : _DIGIT
+digit : DIGIT
       ;
 
 integer : INT_LITERAL
@@ -135,7 +135,7 @@ enclosure : parenth_form | list_display
 literal : stringliteral | integer
         ;
 
-stringliteral : _STRING
+stringliteral : STRING | RAWSTRING
               ;
 
 parenth_form : '('! (expression_list)? ')'!
@@ -150,7 +150,7 @@ list_comprehension : expression list_for
 list_for : "for"! target_list "in"! old_expression_list (list_iter)?
          ;
 
-old_expression_list : old_expression ((','! old_expression)+ (','!)?)?
+old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
 
 list_iter : list_for | list_if
           ;
@@ -170,7 +170,7 @@ key_datum : expression ':'! expression
 string_conversion : '`'! expression_list '`'!
                   ;
 
-primary : atom | attrbuteref | subscription
+primary : atom | attributeref | subscription
         | slicing | call
         ;
 
@@ -188,12 +188,18 @@ simple_slicing : primary '['! short_slice ']'!
 
 slice_list : slice_item (','! slice_item)* (','!)?
            ;
+           
+slice_item : expression | proper_slice | ellipsis ;
 
 proper_slice : short_slice
              ;
 
-short_slice : (lower_bounce)? ':'! (upper_bound)?
+short_slice : (lower_bound)? ':'! (upper_bound)?
             ;
+
+lower_bound : expression ;
+
+upper_bound : expression ;
 
 ellipsis : "..."!
          ;
@@ -215,7 +221,7 @@ keyword_item : identifier '='! expression
              ;
 
 power : primary ("**"! u_expr)?
-      ?
+      ;
 
 u_expr : power | '-' u_expr | '+' u_expr
        ;
@@ -235,7 +241,7 @@ and_expr : a_expr | and_expr '&'! a_expr
 comparison : and_expr (comp_operator and_expr)*
            ;
 
-comp_operator : _COMPARISON_OPERATORS
+comp_operator : COMPARISON_OPERATORS
               ;
 
 expression : conditional_expression
@@ -256,7 +262,7 @@ and_test : not_test | and_test "and"! not_test
 not_test : comparison | "not"! not_test
          ;
 
-expression_list : expression (','! expression)* (','!)?
+expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
                 ;
 
 simple_stmt : expression_stmt
@@ -285,7 +291,7 @@ target : identifier
 pass_stmt : "pass"
           ;
 
-print_stmt : "print"! (expression (","! expression)* (","!)?)?
+print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $*); }
            ;
 
 return_stmt : "return"! (expression_list)?
@@ -366,24 +372,31 @@ interactive_input : (stmt_list)? '\n'!
                   | compound_stmt '\n'!
                   ;
 
-eval_input : expression_list ('\n')*!
+eval_input : expression_list ('\n'!)*
            ;
 
 input_input : expression_list '\n'!
             ;
 
 /* Shoulda been built-in */
-_COMPARISON_OPERATORS : '<' | '>' | "==" | ">=" | "<=" | "!="
+COMPARISON_OPERATORS : '<' | '>' | "==" | ">=" | "<=" | "!="
                       | "is" ("not")? | ("not")? "in"
                       ;
 _DIGIT : ('0' .. '9')
        ;
+DIGIT : _DIGIT ;
+
 _LOWER : ('a' .. 'z')
        ;
+LOWER : _LOWER ;
+
 _UPPER : ('A' .. 'Z')
        ;
+UPPER : _UPPER ;
+
 _LETTER : (_LOWER | _UPPER)
         ;
+LETTER : _LETTER ;
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
