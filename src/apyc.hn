@@ -304,12 +304,12 @@ _COMPARISON_OPERATORS : '<' | '>' | "==" | ">=" | "<=" | "!="
                       ;
 _DIGIT : ('0' .. '9')
        ;
-_LETTER : (_LOWER | _UPPER)
-        ;
 _LOWER : ('a' .. 'z')
        ;
 _UPPER : ('A' .. 'Z')
        ;
+_LETTER : (_LOWER | _UPPER)
+        ;
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
@@ -336,8 +336,6 @@ INT_LITERAL : _DECIMALINTEGER | _OCTINTEGER | _HEXINTEGER
             ;
 
 /* Strings whoop whoop */
-_OCTAL : ('0' .. '7')
-      ;
 _STRINGCHARS : _ANY - ('\\'|'\''|'"'|'\n')
              ;
 _SHORTSTRINGCHARS : _STRINGCHARS | '\\'
@@ -347,7 +345,7 @@ _LONGSTRINGCHARS : _STRINGCHARS  | '\n'
 
 _RAWESCAPESEQ : '\\' _ANY
               ;
-_ESCAPESEQ : _RAWESCAPESEQ | '\\' _OCTAL _OCTAL? _OCTAL?
+_ESCAPESEQ : _RAWESCAPESEQ | '\\'  _OCTDIGIT _OCTDIGIT? _OCTDIGIT?
            ;
 
 _STRING_NOT_DOUBLEQ : _STRINGCHARS | '\''
@@ -373,10 +371,10 @@ _RAWLONGSTRING : "\"\"\"" ( _LONGSTRING_DOUBLE | _RAWESCAPESEQ )* "\"\"\""
             | "'''" ( _LONGSTRING_SINGLE | _RAWESCAPESEQ )* "'''"
             ;
 
-STRING : _SHORTSTRING  { $$ = AST::make_token(STRING, $TEXT_SIZE - 1, $TEXT + 1); }
+STRING : _SHORTSTRING  { $$ = AST::make_token(STRING, $TEXT_SIZE - 2, $TEXT + 1); }
        | _LONGSTRING { $$ = AST::make_token(STRING, $TEXT_SIZE - 6, $TEXT + 3); }
        ;
-RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 1, $TEXT + 2); }
+RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 3, $TEXT + 2); }
           |  ('r'|'R') _RAWLONGSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 7, $TEXT + 4); }
           ;
 
