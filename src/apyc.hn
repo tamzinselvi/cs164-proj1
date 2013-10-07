@@ -110,18 +110,6 @@ keyword : "and"     | "del"     | "from"    | "not"     | "while"
 identifier : ID
            ;
 
-letter : lowercase | uppercase
-       ;
-
-lowercase : LOWER
-          ;
-
-uppercase : UPPER
-          ;
-
-digit : DIGIT
-      ;
-
 integer : INT_LITERAL
         ;
 
@@ -188,8 +176,9 @@ simple_slicing : primary '['! short_slice ']'!
 
 slice_list : slice_item (','! slice_item)* (','!)?
            ;
-           
-slice_item : expression | proper_slice | ellipsis ;
+
+slice_item : expression | proper_slice | ellipsis
+           ;
 
 proper_slice : short_slice
              ;
@@ -197,9 +186,11 @@ proper_slice : short_slice
 short_slice : (lower_bound)? ':'! (upper_bound)?
             ;
 
-lower_bound : expression ;
+lower_bound : expression
+            ;
 
-upper_bound : expression ;
+upper_bound : expression
+            ;
 
 ellipsis : "..."!
          ;
@@ -238,10 +229,11 @@ a_expr : m_expr | a_expr '+' m_expr
 and_expr : a_expr | and_expr '&'! a_expr
          ;
 
-comparison : and_expr (comp_operator and_expr)*
+comparison : and_expr (comp_operator! and_expr)*
            ;
 
-comp_operator : COMPARISON_OPERATORS
+comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
+              | "is" ("not")? | ("not")? "in"
               ;
 
 expression : conditional_expression
@@ -379,24 +371,17 @@ input_input : expression_list '\n'!
             ;
 
 /* Shoulda been built-in */
-COMPARISON_OPERATORS : '<' | '>' | "==" | ">=" | "<=" | "!="
-                      | "is" ("not")? | ("not")? "in"
-                      ;
 _DIGIT : ('0' .. '9')
        ;
-DIGIT : _DIGIT ;
 
 _LOWER : ('a' .. 'z')
        ;
-LOWER : _LOWER ;
 
 _UPPER : ('A' .. 'Z')
        ;
-UPPER : _UPPER ;
 
 _LETTER : (_LOWER | _UPPER)
         ;
-LETTER : _LETTER ;
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
