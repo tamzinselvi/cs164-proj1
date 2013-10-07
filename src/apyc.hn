@@ -95,12 +95,92 @@
 
 %%
 
-program : stmt_list* { theTree = $^(MODULE, $*); $$ = NULL; }
+program : stamt_list* { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
+        
+input_input : expression_list '\n'!;
 
-stmt_list : (INDENT!|DEDENT!)? print_stmt '\n'!;
+eval_input : expression_list ('\n')*!;
 
-print_stmt : "print" expression_list { $$ = $^(PRINTLN, $expression_list); }
+interactive_input : (stmt_list)? '\n'!
+                  | compound_stmt '\n'!
+                  ;
+
+file_input : ('\n'! | statement)* ;
+
+classname : identifier ;
+
+inheritance : "("! (expression_list)? ")"! ;
+
+classdef : "class" classname (inheritance)? ":"!
+            suite
+            ;
+            
+funcname : identifier ;
+
+parameter : identifier;
+
+defparameter : parameter ("="! expression)? ;
+
+parameter_list : (defparameter ","!)*
+                (defparameter (","!)?)
+                ;
+
+funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite ;
+
+for_stmt : "for"! target_list "in"! expression_list
+            ":"! suite ("else"! ":"! suite)? ;
+            
+while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)? ;
+
+if_stmt : "if"! expression ":"! suite
+            ( "elif"! expression ":"! suite)*
+            ("else"! ":" suite)?
+            ;
+            
+stmt_list : simple_stmt (";"! simple_stmt)* (";"!)? ;
+
+statement : stmt_list '\n'!| compound_stmt ;
+
+suite : stmt_list '\n'!
+        | '\n'! INDENT! statement+ DEDENT!
+        ;
+        
+compound_stmt : if_stmt
+              | while_stmt
+              | for_stmt
+              | funcdef
+              | classdef
+              ;
+              
+name : identifier ;
+
+relative_module : ("."!)* module | ("."!)+ ;
+
+module : (identifier "."!)* identifier ;
+
+continue_stmt : "continue" ;
+
+break_stmt : "break" ;
+
+return_stmt : "return"! (expression_list)? ;
+
+print_stmt : "print"! (expression (","! expression)* (","!)?)? ;
+
+pass_stmt : "pass" ;
+
+target : identifier
+       | attributeref
+       | subscription
+       | slicing
+       ;
+       
+target_list : ("("!)? target (","! target)* (","!)? (")"!)? 
+            | ("["!)? target (","! target)* (","!)? ("]"!)?
+
+stamt_list : (INDENT!|DEDENT!)? print_stamt '\n'!;
+
+print_stamt : "print" expression_list { $$ = $^(PRINTLN, $expression_list); }
            ;
 
 /* Grammar */
@@ -110,6 +190,8 @@ identifier : ID
 string_literal : STRING
                | RAWSTRING
                ;
+               
+int_literal : INT_LITERAL ;
 
 int_literal : INT_LITERAL
             ;
