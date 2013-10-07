@@ -83,7 +83,10 @@
  * node operators to printable strings.
  */
 
+%token SIMPLE_STMT "@simple"
+
 %token PRINTLN "@println"
+%token RETURN "@return"
 %token EMPTY
 %token EXPR_LIST "@expr_list"
 %token MODULE "@module"
@@ -94,7 +97,7 @@
 
 %%
 
-program : (input_input | eval_input | interactive_input | file_input) { theTree = $^(MODULE, $*); $$ = NULL; }
+program : (input_input | eval_input | interactive_input | file_input)* { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
 
 /* Grammar */
@@ -286,14 +289,20 @@ pass_stmt : "pass"
 print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $*); }
            ;
 
-return_stmt : "return"! (expression_list)?
+return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
             ;
 
-break_stmt : "break"
+break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $break.c_text()); }
            ;
 
-continue_stmt : "continue"
+break : "break"
+      ;
+
+continue_stmt : continue { $$ = AST::make_token(SIMPLE_STMT, $continue.text_size(), $continue.c_text()); }
               ;
+
+continue : "continue"
+         ;
 
 module : (identifier "."!)* identifier
        ;
