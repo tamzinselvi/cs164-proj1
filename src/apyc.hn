@@ -110,10 +110,12 @@ expression_list :
 
 expression :
       INT_LITERAL
-    | STRING
-    | RAWSTRING
+    | string_literal    
     ;
 
+string_literal : STRING
+               | RAWSTRING
+               ;
 /* Handle indentation at the beginning of a line. */
 *: _BOL (' ' | '\t')* %prefer { cout << "x" << countIndent($TEXT) << " y " << $TEXT_SIZE; } ;
 
@@ -122,36 +124,47 @@ expression :
 
 INT_LITERAL : ('1' .. '9') ('0' .. '9')* /* FIXME */;
 
+
+/* Strings whoop whoop */
 _OCTAL : ('0' .. '7') ;
+_STRINGCHARS : _ANY - ('\\'|'\''|'"'|'\n');
+_SHORTSTRINGCHARS: _STRINGCHARS | '\\' ;
+_LONGSTRINGCHARS: _STRINGCHARS  | '\n' ;
 
-_STRING1 :  _ANY - ('\n'| '\'' ) ;
-_STRING2 : _ANY - ( '\n' | '"' ) ;
+_RAWESCAPESEQ : '\\' _ANY;
+_ESCAPESEQ : _RAWESCAPESEQ | '\\' _OCTAL _OCTAL? _OCTAL?;
 
-_STRING3 : _ANY - ('\\'|'\''|'"') ;
-_LONGSTRING_SINGLE : _STRING3 | '"' | '\n' | '\r';
-_LONGSTRING_DOUBLE : _STRING3 | '\'' | '\n' | '\r';
-_LONGSTRING1 : _LONGSTRING_SINGLE | _LONGSTRING_SINGLE '\'' | _LONGSTRING_SINGLE "''" | _LONGSTRING_SINGLE "\\'''" ;
-_LONGSTRING2 : _LONGSTRING_DOUBLE | _LONGSTRING_DOUBLE '"' | _LONGSTRING_DOUBLE "\"\""  ;
+_STRING_NOT_DOUBLEQ : _STRINGCHARS | '\'';
+_STRING_NOT_SINGLEQ : _STRINGCHARS | '"';
 
-_ESCAPESEQ : '\\' _ANY | '\\' _OCTAL _OCTAL? _OCTAL?;
-STRING : 
-      '\'' ( _STRING1 | _ESCAPESEQ )* '\''
-    | '"' ( _STRING2 | _ESCAPESEQ )* '"'
-    | "\"\"\"" ( _LONGSTRING2 | _ESCAPESEQ )* "\"\"\""
-    | "'''" ( _LONGSTRING1 | _ESCAPESEQ )* "'''"
-    ;
-  
-_RAWSTRINGPREFIX : "r" | "R" ;
-_RAWESCAPESEQ : '\\' _ANY ;
-RAWSTRING : 
-      _RAWSTRINGPREFIX '\'' ( _STRING1 | _RAWESCAPESEQ )* '\''
-    | _RAWSTRINGPREFIX '"' ( _STRING2 | _RAWESCAPESEQ )* '"'
-    | _RAWSTRINGPREFIX "\"\"\"" ( _LONGSTRING2 | _RAWESCAPESEQ )* "\"\"\""
-    | _RAWSTRINGPREFIX "'''" ( _LONGSTRING1 | _RAWESCAPESEQ )* "'''"
-    ;
+_SHORTSTRING : '\'' ( _STRING_NOT_SINGLEQ | _ESCAPESEQ )* '\''
+             | '"' ( _STRING_NOT_DOUBLEQ | _ESCAPESEQ )* '"';
+_RAWSHORTSTRING : '\'' ( _STRING_NOT_SINGLEQ | _RAWESCAPESEQ )* '\''
+                | '"' ( _STRING_NOT_DOUBLEQ | _RAWESCAPESEQ )* '"';
+_LONGSTRING_SINGLE : '"'  | _LONGSTRINGCHARS | _LONGSTRINGCHARS '\'' | _LONGSTRINGCHARS "''" | _LONGSTRINGCHARS "\\'''";
+_LONGSTRING_DOUBLE : '\'' | _LONGSTRINGCHARS | _LONGSTRINGCHARS '"' | _LONGSTRINGCHARS "\"\"" | _LONGSTRINGCHARS "\\\"\"\"" ;
+
+_LONGSTRING : "\"\"\"" ( _LONGSTRING_DOUBLE | _ESCAPESEQ )* "\"\"\""
+            | "'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* "'''";
+_RAWLONGSTRING : "\"\"\"" ( _LONGSTRING_DOUBLE | _RAWESCAPESEQ )* "\"\"\""
+            | "'''" ( _LONGSTRING_SINGLE | _RAWESCAPESEQ )* "'''";
+
+
+STRING : _SHORTSTRING  { $$ = AST::make_token(STRING, $TEXT_SIZE - 1, $TEXT + 1); } 
+       | _LONGSTRING { $$ = AST::make_token(STRING, $TEXT_SIZE - 6, $TEXT + 3); };
+RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 1, $TEXT + 2); } 
+          |  ('r'|'R') _RAWLONGSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 7, $TEXT + 4); } ;
+/* bad strings */
+* : ( ('r'|'R')? ( '\'' ( _STRING_NOT_SINGLEQ | _ESCAPESEQ )*
+             | '"' ( _STRING_NOT_DOUBLEQ | _ESCAPESEQ )* )) { error(yysource_location(), "unterminated short string"); };
+
+
+* : ( ('r'|'R')? ( ("\"\"\"" ( _LONGSTRING_DOUBLE | _ESCAPESEQ )* )
+      | ("'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* ) )) { error(yysource_location(), "unterminated long string"); };
+
 %%
 
-bool debugParser = true;
+bool debugParser = false;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)
