@@ -10,6 +10,7 @@
   #include <string>
   #include "apyc.h"
   #include "ast.h"
+  #include <stack>
 
   using namespace std;
 
@@ -30,6 +31,8 @@
   /** Return a new ID node, where the text of the identifier is given by
    *  TOKEN. */
   static AST_Ptr make_id (AST_Ptr& token);
+
+  static stack<int> indents;
 
 %}
 
@@ -87,16 +90,18 @@
 %token MODULE "@module"
 %token BINOP "@binop"
 %token UNOP "@unop"
+%token INDENT
+%token DEDENT
 /* FIXME: MORE... */
 
 %%
 
-program : stmt_list*   { theTree = $^(MODULE, $*); $$ = NULL; }
+program : stmt_list* { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
 
 /* REPLACE THE FOLLOWING WITH SOMETHING REAL. */
 
-stmt_list : print_stmt '\n'!;
+stmt_list : (INDENT!|DEDENT!)? print_stmt '\n'!;
 
 print_stmt : "print"  expression_list 
     { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
@@ -116,11 +121,7 @@ expression :
 string_literal : STRING
                | RAWSTRING
                ;
-/* Handle indentation at the beginning of a line. */
-*: _BOL (' ' | '\t')* %prefer { cout << "x" << countIndent($TEXT) << " y " << $TEXT_SIZE; } ;
 
-/* Normally, throw away whitespace other than newline. */
-* : (' ' | '\t' | '\r')+ ;
 
 INT_LITERAL : ('1' .. '9') ('0' .. '9')* /* FIXME */;
 
@@ -162,9 +163,17 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 * : ( ('r'|'R')? ( ("\"\"\"" ( _LONGSTRING_DOUBLE | _ESCAPESEQ )* )
       | ("'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* ) )) { error(yysource_location(), "unterminated long string"); };
 
+
+
+/* Handle indentation at the beginning of a line. */
+*: _BOL (' ' | '\t')* %prefer { YYSET_TOKEN(processIndent($TEXT)); } ;
+
+/* Normally, throw away whitespace other than newline. */
+* : (' ' | '\t' | '\r')+ ;
+
 %%
 
-bool debugParser = false;
+bool debugParser = true;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)
@@ -208,7 +217,7 @@ parse (FILE* f, const string& name)
 }
 
 int
-countIndent (const char* text)
+indentLength (const char* text)
 {
     int size = strlen(text);
     int blnks = 0;
@@ -220,4 +229,29 @@ countIndent (const char* text)
         }
     }
     return blnks;
+}
+
+int processIndent( const char* text )
+{
+  int length = indentLength(text);
+  if ( indents.empty() ) {
+    indents.push(0);
+  }
+  if ( length > indents.top()  ) {
+    indents.push(length);
+    return INDENT;
+  } else if ( length < indents.top() ) {
+    while ( !indents.empty() ) {
+      indents.pop();
+      if ( length > indents.top() ) {
+        continue;
+      }
+      if ( length != indents.top() ){
+        error(yysource_location(), "inconsistent indentation");
+      }
+      return DEDENT;
+    }
+  }
+
+  return -1;
 }
