@@ -286,7 +286,7 @@ target : identifier
 pass_stmt : "pass"
           ;
 
-print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $*); }
+print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
            ;
 
 return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
@@ -478,7 +478,7 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 
 %%
 
-bool debugParser = true;
+bool debugParser = false;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)

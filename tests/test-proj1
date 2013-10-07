@@ -56,7 +56,7 @@ def Compile(prog, ast):
     return code == 0
 
 def Unparse(ast, python):
-    code, out, err = Run("pyunparse -o %s --remove-extensions %s", python, ast)
+    code, out, err = Run("./pyunparse -o %s --remove-extensions %s", python, ast)
     return code == 0
 
 def Execute(prog, inp):
@@ -109,7 +109,9 @@ for f in tests:
     else:
         prog2 = base + "-2.py"
         inp = os.path.join(dir, base + ".in")
-        std = Contents (os.path.join(dir, base + ".std"))
+        #std = Contents (os.path.join(dir, base + ".std"))
+        Execute(base + ".py", Contents(inp))
+        std = Stdout
         if not Compile(f, ast):
             msg = "FAIL (wrong exit code)"
         elif Stderr:

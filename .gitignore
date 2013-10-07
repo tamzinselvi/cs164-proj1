@@ -9,3 +9,4 @@ apyc
 .depend
 .project
 .settings/
+*.ast
