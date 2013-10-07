@@ -1,0 +1,5 @@
+(module 0
+    (println 1
+        (expr_list 1
+            (id 1 chimp)
+            (string_literal 1 "chimp\042"))))

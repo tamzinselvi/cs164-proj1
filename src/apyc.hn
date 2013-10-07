@@ -8,6 +8,7 @@
 
 %{
   #include <string>
+  #include <stack>
   #include "apyc.h"
   #include "ast.h"
   #include <stack>
@@ -46,21 +47,21 @@
  * also often refer to as INDENT. A declaration such as
  *   %token IF "if"
  * defines a constant IF and makes it the syntactic category for the token
- * "if".  The built-in function yyexternal_token_name(...) maps between 
- * syntactic categories (like IF) and the token strings defined in these 
- * %token declarations (like "if").  
+ * "if".  The built-in function yyexternal_token_name(...) maps between
+ * syntactic categories (like IF) and the token strings defined in these
+ * %token declarations (like "if").
  *
  * The Horn system uses tokens as leaf nodes and as AST node operators.  A
  * rule such as
  *     if_stmt: "if"^ expression ":"! ...
  * with no action, by default creates an AST node whose operator is an "if"
  * token (with syntactic category IF, given the %token declaration above).
- * When the node type does not correspond to a token that appears in the 
+ * When the node type does not correspond to a token that appears in the
  * program, we define a dummy token type that serves only as an AST
  * node type.  For example, we can define
  *     %token DICT_DISPLAY ...
  * and then use
- *     dict_display: "{"! key_datum_list? "}"! 
+ *     dict_display: "{"! key_datum_list? "}"!
  *              { $$ = $^(DICT_DISPLAY, $*); }
  * in the grammar (using DICT_DISPLAY only in actions, not as a grammar
  * symbol).
@@ -82,10 +83,8 @@
  * node operators to printable strings.
  */
 
-%token ID
-
 %token PRINTLN "@println"
-%token EMPTY 
+%token EMPTY
 %token EXPR_LIST "@expr_list"
 %token MODULE "@module"
 %token BINOP "@binop"
@@ -99,32 +98,78 @@
 program : stmt_list* { theTree = $^(MODULE, $*); $$ = NULL; }
         ;
 
-/* REPLACE THE FOLLOWING WITH SOMETHING REAL. */
-
 stmt_list : (INDENT!|DEDENT!)? print_stmt '\n'!;
 
-print_stmt : "print"  expression_list 
-    { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
-    ;
+print_stmt : "print" expression_list { $$ = $^(PRINTLN, $expression_list); }
+           ;
 
-expression_list :
-      expression (","! expression)*
-                      { $$ = $^(EXPR_LIST, $*); }
-    | /*empty*/       { $$ = $^(EXPR_LIST); }
-    ;
-
-expression :
-      INT_LITERAL
-    | string_literal    
-    ;
+/* Grammar */
+identifier : ID
+           ;
 
 string_literal : STRING
                | RAWSTRING
                ;
 
+expression_list : expression (","! expression)* { $$ = $^(EXPR_LIST, $*); }
+                | /*empty*/ { $$ = $^(EXPR_LIST); }
+                ;
 
+expression : identifier
+           | string_literal
+           ;
+
+/* DISABLED: WIP
+ *
+ * keyword : "and"     | "del"     | "from"    | "not"     | "while"
+ *         | "as"      | "elif"    | "global"  | "or"      | "with"
+ *         | "assert"  | "else"    | "if"      | "pass"    | "yield"
+ *         | "break"   | "except"  | "import"  | "print"
+ *         | "class"   | "exec"    | "in"      | "raise"
+ *         | "continue"| "finally" | "is"      | "return"
+ *         | "def"     | "for"     | "lambda"  | "try"
+ *         ;
+ *
+ * parenth_form : '(' (expression_list)? ')'
+ *              ;
+ *
+ * comparison : or_expr (comp_operator or_expr)*
+ *            ;
+ *
+ * conditional_expression : or_test ("if" or_test "else" expression)?
+ *                        ;
+ *
+ * or_test : and_test | or_test "or" and_test
+ *         ;
+ *
+ * and_test : not_test | and_test "and" not_test
+ *          ;
+ *
+ * not_test : comparison | "not" not_test
+ *          ;
+ */
+
+/* Pre-implemented non-implemented helper tokens */
+_LOWER : ('a' .. 'z')
+       ;
+
+_UPPER : ('A' .. 'Z')
+       ;
+
+_LETTER : (_LOWER | _UPPER)
+        ;
+
+_DIGIT : ('0' .. '9')
+       ;
+
+/* Identifiers */
+ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
+   ;
+
+/* Integers */
+
+/* TODO: Shamim's code goes here */
 INT_LITERAL : ('1' .. '9') ('0' .. '9')* /* FIXME */;
-
 
 /* Strings whoop whoop */
 _OCTAL : ('0' .. '7') ;
@@ -150,26 +195,27 @@ _LONGSTRING : "\"\"\"" ( _LONGSTRING_DOUBLE | _ESCAPESEQ )* "\"\"\""
 _RAWLONGSTRING : "\"\"\"" ( _LONGSTRING_DOUBLE | _RAWESCAPESEQ )* "\"\"\""
             | "'''" ( _LONGSTRING_SINGLE | _RAWESCAPESEQ )* "'''";
 
-
-STRING : _SHORTSTRING  { $$ = AST::make_token(STRING, $TEXT_SIZE - 1, $TEXT + 1); } 
+STRING : _SHORTSTRING  { $$ = AST::make_token(STRING, $TEXT_SIZE - 1, $TEXT + 1); }
        | _LONGSTRING { $$ = AST::make_token(STRING, $TEXT_SIZE - 6, $TEXT + 3); };
-RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 1, $TEXT + 2); } 
+RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 1, $TEXT + 2); }
           |  ('r'|'R') _RAWLONGSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 7, $TEXT + 4); } ;
-/* bad strings */
-* : ( ('r'|'R')? ( '\'' ( _STRING_NOT_SINGLEQ | _ESCAPESEQ )*
-             | '"' ( _STRING_NOT_DOUBLEQ | _ESCAPESEQ )* )) { error(yysource_location(), "unterminated short string"); };
 
+/* Handle bad strings */
+* : ( ('r'|'R')? ( '\'' ( _STRING_NOT_SINGLEQ | _ESCAPESEQ )*
+             | '"' ( _STRING_NOT_DOUBLEQ | _ESCAPESEQ )* )) { error(yysource_location(), "unterminated short string"); }
+  ;
 
 * : ( ('r'|'R')? ( ("\"\"\"" ( _LONGSTRING_DOUBLE | _ESCAPESEQ )* )
-      | ("'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* ) )) { error(yysource_location(), "unterminated long string"); };
-
-
+      | ("'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* ) )) { error(yysource_location(), "unterminated long string"); }
+  ;
 
 /* Handle indentation at the beginning of a line. */
-*: _BOL (' ' | '\t')* %prefer { YYSET_TOKEN(processIndent($TEXT)); } ;
+* : _BOL (' ' | '\t')* %prefer { YYSET_TOKEN(processIndent($TEXT)); }
+  ;
 
 /* Normally, throw away whitespace other than newline. */
-* : (' ' | '\t' | '\r')+ ;
+* : (' ' | '\t' | '\r')+
+  ;
 
 %%
 
@@ -191,7 +237,7 @@ make_binop (const List_Ptr& operands)
 static AST_Ptr
 make_id (AST_Ptr& token)
 {
-    AST_Ptr result = AST::make_token (ID, token->text_size (), 
+    AST_Ptr result = AST::make_token (ID, token->text_size (),
                                       token->as_chars (), false);
     result->set_loc (token->loc ());
     return result;
