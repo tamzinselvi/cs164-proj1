@@ -149,18 +149,6 @@ expression : identifier
  *          ;
  */
 
-/* Pre-implemented non-implemented helper tokens */
-_LOWER : ('a' .. 'z')
-       ;
-
-_UPPER : ('A' .. 'Z')
-       ;
-
-_LETTER : (_LOWER | _UPPER)
-        ;
-
-_DIGIT : ('0' .. '9')
-       ;
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
@@ -168,10 +156,33 @@ ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_
 
 /* Integers */
 
+_DIGIT : ('0' .. '9') ;
+
+_OCTDIGIT : ('0' .. '7') ;
+
+_HEXDIGIT : _DIGIT | ('a' .. 'f') | ('A' .. 'F');
+
+_HEXINTEGER : '0' ('x' | 'X') _HEXDIGIT+;
+
+_OCTINTEGER : '0' _OCTDIGIT+;
+
+_NONZERODIGIT : ('1' .. '9') ;
+
+_DECIMALINTEGER : _NONZERODIGIT _DIGIT* | '0';
+
+INT_LITERAL : _DECIMALINTEGER | _OCTINTEGER | _HEXINTEGER;
+
 /* TODO: Shamim's code goes here */
 INT_LITERAL : ('1' .. '9') ('0' .. '9')* /* FIXME */;
 
 /* Strings whoop whoop */
+_LOWER : ('a' .. 'z')
+       ;
+_UPPER : ('A' .. 'Z')
+       ;
+_LETTER : (_LOWER | _UPPER)
+        ;
+
 _OCTAL : ('0' .. '7') ;
 _STRINGCHARS : _ANY - ('\\'|'\''|'"'|'\n');
 _SHORTSTRINGCHARS: _STRINGCHARS | '\\' ;

@@ -67,7 +67,20 @@ private:
      *  overridden to provide additional processing during the
      *  construction of a node or token.] */
     Int_Token* post_make () {
-        // FIXME
+        const char* s = as_chars() ;
+        if (strlen(s) > 1 && (tolower(s[1]) == 'x')) {
+            value = strtol(s, NULL, 16);
+        }
+        else if (strlen(s) > 1 && s[0] == '0') {
+            value = strtol(s, NULL, 8);
+        }
+        else {
+            value = atoi(s);
+        }
+        long bound = -1073741824;
+        if ((value < bound) || (value > -bound - 1)) {
+            error(s, "All integer literals must be in the range [0, 2^30].");
+        }
         return this;
     }
 
