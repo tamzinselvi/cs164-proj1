@@ -110,8 +110,8 @@ for f in tests:
         prog2 = base + "-2.py"
         inp = os.path.join(dir, base + ".in")
         #std = Contents (os.path.join(dir, base + ".std"))
-        Execute(base + ".py", Contents(inp))
-        std = Stdout
+        Execute(dir + '/' + base + ".py", Contents(inp))
+        std = Stdout + ""
         if not Compile(f, ast):
             msg = "FAIL (wrong exit code)"
         elif Stderr:

@@ -486,13 +486,15 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
   | ("'''" ( _LONGSTRING_SINGLE | _ESCAPESEQ )* ) )) { error(yysource_location(), "unterminated long string"); }
   ;
 
-/* Comments */
-* : '#' _ANY* _EOL
-  | _BOL  (' ' | '\t' | '\r')+ _EOL
+/* Comments and blank lines */
+_SAMELINE : _ANY - ('\n');
+* : (' ' | '\t' | '\r')* '#' _SAMELINE* _EOL %prefer { YYIGNORE; }
+  | _BOL  (' ' | '\t' | '\r')* _EOL %prefer { YYIGNORE; }
   ;
 
+
 /* Handle indentation at the beginning of a line. */
-* : _BOL (' ' | '\t')* %prefer { YYSET_TOKEN(processIndent($TEXT)); }
+* : _BOL (' ' | '\t')+ %prefer { YYSET_TOKEN(processIndent($TEXT)); }
   ;
 
 
