@@ -1,5 +1,5 @@
 # Top-level Makefile for Project 1.
-# 
+#
 # Targets:
 #   gmake [ default ]        Compiles sources in src directory
 #   gmake check              Compiles sources and runs tests.  The parameter
@@ -19,6 +19,7 @@ APYC = $(shell echo `pwd`/apyc)
 default: compile
 
 compile:
+	$(MAKE) -C src parser-sentinel
 	$(MAKE) -C src compile
 
 check:
@@ -32,7 +33,6 @@ clean:
 really-clean: clean
 	$(MAKE) -C src really-clean
 	$(MAKE) -C tests really-clean
-
 
 depend:
 	$(MAKE) -C src depend
