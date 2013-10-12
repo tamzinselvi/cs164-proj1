@@ -85,7 +85,10 @@
 
 %token SIMPLE_STMT "@simple"
 
+%token DEF "@def"
 %token PRINTLN "@println"
+%token BLOCK "@block"
+%token CLASS "@class"
 %token RETURN "@return"
 %token EMPTY
 %token EXPR_LIST "@expr_list"
@@ -108,8 +111,8 @@ input_input : expression_list '\n'!
 eval_input : expression_list ('\n'!)*
            ;
 
-interactive_input : (stmt_list)? '\n'!
-                  | compound_stmt '\n'!
+interactive_input : (stmt_list)? '\n'!?
+                  | compound_stmt '\n'!?
                   ;
 
 file_input : ('\n'! | statement)*
@@ -118,10 +121,7 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-inheritance : "("! (expression_list)? ")"!
-            ;
-
-classdef : "class" classname (inheritance)? ":"! suite
+classdef : "class" classname ":"! suite { $$ = $^(CLASS, $classname, $suite); }
          ;
 
 funcname : identifier
@@ -136,7 +136,7 @@ defparameter : parameter ("="! expression)?
 parameter_list : (defparameter ","!)* (defparameter (","!)?)
                ;
 
-funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite
+funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite { $$ = $^(DEF, $funcname, $parameter_list, $suite); }
         ;
 
 for_stmt : "for"! target_list "in"! expression_list
@@ -157,8 +157,8 @@ stmt_list : simple_stmt (";"! simple_stmt)* (";"!)?
 statement : stmt_list '\n'! | compound_stmt
           ;
 
-suite : stmt_list '\n'!
-      | '\n'! INDENT! statement+ DEDENT!
+suite : stmt_list '\n'! { $$ = $^(BLOCK, $*); }
+      | '\n'! INDENT! statement+ DEDENT! { $$ = $^(BLOCK, $*); }
       ;
 
 compound_stmt : if_stmt
@@ -173,41 +173,44 @@ name : identifier
 
 continue_stmt : continue { $$ = AST::make_token(SIMPLE_STMT, $continue.text_size(), $continue.c_text()); }
               ;
-              
+
 continue : "continue"
          ;
 
 break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $break.c_text()); }
            ;
-           
+
 break : "break"
       ;
 
 return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
-            ;     
+            ;
 
 print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
            ;
 
-pass_stmt : "pass"
+pass_stmt : pass { $$ = AST::make_token(SIMPLE_STMT, $pass.text_size(), $pass.c_text()); }
           ;
+
+pass : "pass"
+     ;
 
 target : identifier
        | attributeref
        | subscription
        | slicing
        ;
- 
+
 target_list : ("("!)? target (","! target)* (","!)? (")"!)?
             | ("["!)? target (","! target)* (","!)? ("]"!)?
             ;
-            
+
 assignment_stmt : (target_list '='!)+ expression_list
                 ;
-       
+
 expression_stmt : expression_list
                 ;
-       
+
 simple_stmt : expression_stmt
             | assignment_stmt
             | print_stmt
@@ -215,39 +218,39 @@ simple_stmt : expression_stmt
             | break_stmt
             | continue_stmt
             ;
-       
+
 expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
                 ;
 
 not_test : comparison | "not"! not_test
          ;
-    
+
 and_test : not_test | and_test "and"! not_test
          ;
-              
+
 or_test : and_test | or_test "or"! and_test
         ;
 
 conditional_expression : or_test ("if"! or_test "else"! expression)?
                        ;
-         
+
 old_expression : or_test
                ;
-      
+
 expression : conditional_expression
            ;
 
 comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
               | "is" ("not")? | ("not")? "in"
               ;
-   
+
 comparison : a_expr (comp_operator! a_expr)*
            ;
 
 a_expr : m_expr | a_expr '+' m_expr
        | a_expr '-' m_expr
        ;
-         
+
 m_expr : u_expr | m_expr '*' u_expr
        | m_expr "//" u_expr | m_expr "/" u_expr
        | m_expr '%' u_expr
@@ -263,7 +266,7 @@ keyword_item : identifier '='! expression
              ;
 
 keyword_arguments : keyword_item (','! keyword_item)*
-                  ;            
+                  ;
 
 positional_arguments : expression (','! expression)*
                      ;
@@ -282,17 +285,17 @@ upper_bound : expression
             ;
 
 lower_bound : expression
-            ;         
+            ;
 
 short_slice : (lower_bound)? ':'! (upper_bound)?
             ;
 
 proper_slice : short_slice
              ;
-         
+
 slice_item : expression | proper_slice | ellipsis
            ;
-         
+
 slice_list : slice_item (','! slice_item)* (','!)?
            ;
 
@@ -304,7 +307,7 @@ slicing : simple_slicing
 
 subscription : primary '['! expression_list ']'!
              ;
-             
+
 attributeref : primary '.'! identifier
              ;
 
@@ -323,15 +326,14 @@ key_datum_list : key_datum (','! key_datum)* (','!)?
 
 dict_display : '{'! (key_datum_list)? '}'!
              ;
-          
+
 list_if : "if" old_expression (list_iter)?
         ;
-          
+
 list_iter : list_for | list_if
           ;
 
 old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
-
 
 list_for : "for"! target_list "in"! old_expression_list (list_iter)?
          ;
@@ -344,7 +346,7 @@ list_display : '['! (expression_list | list_comprehension)? ']'!
 
 parenth_form : '('! (expression_list)? ')'!
              ;
-             
+
 stringliteral : STRING | RAWSTRING
               ;
 
@@ -372,7 +374,7 @@ keyword : "and"     | "del"     | "from"    | "not"     | "while"
         | "continue"| "finally" | "is"      | "return"
         | "def"     | "for"     | "lambda"  | "try"
         ;
-        
+
 /* Shoulda been built-in */
 _DIGIT : ('0' .. '9')
        ;
@@ -387,7 +389,7 @@ _LETTER : (_LOWER | _UPPER)
         ;
 
 /* Identifiers */
-ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')* { $$ = AST::make_token(ID, $TEXT_SIZE, $TEXT); }
+ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
 
 /* Integers */
@@ -472,7 +474,7 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 
 %%
 
-bool debugParser = false;
+bool debugParser = true;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)
@@ -540,12 +542,13 @@ int processIndent( const char* text )
     indents.push(length);
     return INDENT;
   } else if ( length < indents.top() ) {
+    cout << indents.size() << endl;
     while ( !indents.empty() ) {
       indents.pop();
-      if ( length > indents.top() ) {
+      if ( length < indents.top() ) {
         continue;
       }
-      if ( length != indents.top() ){
+      if ( length != indents.top()){
         error(yysource_location(), "inconsistent indentation");
       }
       return DEDENT;
