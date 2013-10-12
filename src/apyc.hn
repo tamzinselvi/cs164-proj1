@@ -124,6 +124,28 @@ classname : identifier
 classdef : "class" classname ":"! suite { $$ = $^(CLASS, $classname, $suite); }
          ;
 
+literal : stringliteral | integer
+        ;
+
+stringpart : STRING
+              | RAWSTRING
+              ;
+
+stringliteral : stringliteral stringpart { $stringliteral.value()->as_token()->append_text($stringpart.value()->as_token()->string_text()); $$ = $stringliteral; }
+              ;
+
+parenth_form : '('! (expression_list)? ')'!
+             ;
+
+list_display : '['! (expression_list | list_comprehension)? ']'!
+             ;
+
+list_comprehension : expression list_for
+                   ;
+
+list_for : "for"! target_list "in"! old_expression_list (list_iter)?
+         ;
+
 funcname : identifier
          ;
 
@@ -474,7 +496,7 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 
 %%
 
-bool debugParser = true;
+bool debugParser = false;
 
 static AST_Ptr
 make_unop (const List_Ptr& operands)
@@ -532,7 +554,8 @@ indentLength (const char* text)
     return blnks;
 }
 
-int processIndent( const char* text )
+int
+processIndent( const char* text )
 {
   int length = indentLength(text);
   if ( indents.empty() ) {
