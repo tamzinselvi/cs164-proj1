@@ -101,217 +101,65 @@ program : (input_input | eval_input | interactive_input | file_input)* { theTree
         ;
 
 /* Grammar */
-keyword : "and"     | "del"     | "from"    | "not"     | "while"
-        | "as"      | "elif"    | "global"  | "or"      | "with"
-        | "assert"  | "else"    | "if"      | "pass"    | "yield"
-        | "break"   | "except"  | "import"  | "print"
-        | "class"   | "exec"    | "in"      | "raise"
-        | "continue"| "finally" | "is"      | "return"
-        | "def"     | "for"     | "lambda"  | "try"
-        ;
 
-identifier : ID
+input_input : expression_list '\n'!
+            ;
+
+eval_input : expression_list ('\n'!)*
            ;
 
-integer : INT_LITERAL
-        ;
-
-atom : identifier | literal | enclosure
-     ;
-
-enclosure : parenth_form | list_display
-          | dict_display | string_conversion
-          ;
-
-literal : stringliteral | integer
-        ;
-
-stringliteral : STRING | RAWSTRING
-              ;
-
-parenth_form : '('! (expression_list)? ')'!
-             ;
-
-list_display : '['! (expression_list | list_comprehension)? ']'!
-             ;
-
-list_comprehension : expression list_for
-                   ;
-
-list_for : "for"! target_list "in"! old_expression_list (list_iter)?
-         ;
-
-old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
-
-list_iter : list_for | list_if
-          ;
-
-list_if : "if" old_expression (list_iter)?
-        ;
-
-dict_display : '{'! (key_datum_list)? '}'!
-             ;
-
-key_datum_list : key_datum (','! key_datum)* (','!)?
-               ;
-
-key_datum : expression ':'! expression
-          ;
-
-string_conversion : '`'! expression_list '`'!
+interactive_input : (stmt_list)? '\n'!
+                  | compound_stmt '\n'!
                   ;
 
-primary : atom | attributeref | subscription
-        | slicing | call
-        ;
-
-attributeref : primary '.'! identifier
-             ;
-
-subscription : primary '['! expression_list ']'!
-             ;
-
-slicing : simple_slicing
-        ;
-
-simple_slicing : primary '['! short_slice ']'!
-               ;
-
-slice_list : slice_item (','! slice_item)* (','!)?
+file_input : ('\n'! | statement)*
            ;
 
-slice_item : expression | proper_slice | ellipsis
-           ;
-
-proper_slice : short_slice
-             ;
-
-short_slice : (lower_bound)? ':'! (upper_bound)?
-            ;
-
-lower_bound : expression
-            ;
-
-upper_bound : expression
-            ;
-
-ellipsis : "..."!
-         ;
-
-call : primary '('! argument_list (','!)? ')'!
-     ;
-
-argument_list : positional_arguments (','! keyword_arguments)?
-              | keyword_arguments
-              ;
-
-positional_arguments : expression (','! expression)*
-                     ;
-
-keyword_arguments : keyword_item (','! keyword_item)*
-                  ;
-
-keyword_item : identifier '='! expression
-             ;
-
-power : primary ("**"! u_expr)?
-      ;
-
-u_expr : power | '-' u_expr | '+' u_expr
-       ;
-
-m_expr : u_expr | m_expr '*' u_expr
-       | m_expr "//" u_expr | m_expr "/" u_expr
-       | m_expr '%' u_expr
-       ;
-
-a_expr : m_expr | a_expr '+' m_expr
-       | a_expr '-' m_expr
-       ;
-
-and_expr : a_expr | and_expr '&'! a_expr
-         ;
-
-comparison : and_expr (comp_operator! and_expr)*
-           ;
-
-comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
-              | "is" ("not")? | ("not")? "in"
-              ;
-
-expression : conditional_expression
-           ;
-
-old_expression : or_test
-               ;
-
-conditional_expression : or_test ("if"! or_test "else"! expression)?
-                       ;
-
-or_test : and_test | or_test "or"! and_test
-        ;
-
-and_test : not_test | and_test "and"! not_test
-         ;
-
-not_test : comparison | "not"! not_test
-         ;
-
-expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
-                ;
-
-simple_stmt : expression_stmt
-            | assignment_stmt
-            | print_stmt
-            | return_stmt
-            | break_stmt
-            | continue_stmt
-            ;
-
-expression_stmt : expression_list
-                ;
-
-assignment_stmt : (target_list '='!)+ expression_list
-                ;
-
-target_list : ("("!)? target (","! target)* (","!)? (")"!)?
-            | ("["!)? target (","! target)* (","!)? ("]"!)?
-            ;
-target : identifier
-       | attributeref
-       | subscription
-       | slicing
-       ;
-
-pass_stmt : "pass"
+classname : identifier
           ;
 
-print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
-           ;
-
-return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
+inheritance : "("! (expression_list)? ")"!
             ;
 
-break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $break.c_text()); }
-           ;
-
-break : "break"
-      ;
-
-continue_stmt : continue { $$ = AST::make_token(SIMPLE_STMT, $continue.text_size(), $continue.c_text()); }
-              ;
-
-continue : "continue"
+classdef : "class" classname (inheritance)? ":"! suite
          ;
 
-module : (identifier "."!)* identifier
-       ;
+funcname : identifier
+         ;
 
-relative_module : ("."!)* module | ("."!)+
-                ;
+parameter : identifier
+          ;
 
-name : identifier
-     ;
+defparameter : parameter ("="! expression)?
+             ;
+
+parameter_list : (defparameter ","!)* (defparameter (","!)?)
+               ;
+
+funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite
+        ;
+
+for_stmt : "for"! target_list "in"! expression_list
+            ":"! suite ("else"! ":"! suite)?
+            ;
+
+while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)?
+            ;
+
+if_stmt : "if"! expression ":"! suite
+            ( "elif"! expression ":"! suite)*
+            ("else"! ":" suite)?
+            ;
+
+stmt_list : simple_stmt (";"! simple_stmt)* (";"!)?
+          ;
+
+statement : stmt_list '\n'! | compound_stmt
+          ;
+
+suite : stmt_list '\n'!
+      | '\n'! INDENT! statement+ DEDENT!
+      ;
 
 compound_stmt : if_stmt
               | while_stmt
@@ -320,65 +168,211 @@ compound_stmt : if_stmt
               | classdef
               ;
 
-suite : stmt_list '\n'!
-      | '\n'! INDENT! statement+ DEDENT!
+name : identifier
+     ;
+
+continue_stmt : continue { $$ = AST::make_token(SIMPLE_STMT, $continue.text_size(), $continue.c_text()); }
+              ;
+              
+continue : "continue"
+         ;
+
+break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $break.c_text()); }
+           ;
+           
+break : "break"
       ;
 
-statement : stmt_list '\n'! | compound_stmt
-          ;
+return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
+            ;     
 
-stmt_list : simple_stmt (";"! simple_stmt)* (";"!)?
-          ;
-
-if_stmt : "if"! expression ":"! suite
-            ( "elif"! expression ":"! suite)*
-            ("else"! ":" suite)?
-        ;
-
-while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)?
+print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
            ;
 
-for_stmt : "for"! target_list "in"! expression_list
-             ":"! suite ("else"! ":"! suite)?
-         ;
+pass_stmt : "pass"
+          ;
 
-funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite
+target : identifier
+       | attributeref
+       | subscription
+       | slicing
+       ;
+ 
+target_list : ("("!)? target (","! target)* (","!)? (")"!)?
+            | ("["!)? target (","! target)* (","!)? ("]"!)?
+            ;
+            
+assignment_stmt : (target_list '='!)+ expression_list
+                ;
+       
+expression_stmt : expression_list
+                ;
+       
+simple_stmt : expression_stmt
+            | assignment_stmt
+            | print_stmt
+            | return_stmt
+            | break_stmt
+            | continue_stmt
+            ;
+       
+expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
+                ;
+
+not_test : comparison | "not"! not_test
+         ;
+    
+and_test : not_test | and_test "and"! not_test
+         ;
+              
+or_test : and_test | or_test "or"! and_test
         ;
 
-parameter_list : (defparameter ","!)* (defparameter (","!)?)
+conditional_expression : or_test ("if"! or_test "else"! expression)?
+                       ;
+         
+old_expression : or_test
                ;
+      
+expression : conditional_expression
+           ;
 
-defparameter : parameter ("="! expression)?
+comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
+              | "is" ("not")? | ("not")? "in"
+              ;
+   
+comparison : a_expr (comp_operator! a_expr)*
+           ;
+
+a_expr : m_expr | a_expr '+' m_expr
+       | a_expr '-' m_expr
+       ;
+         
+m_expr : u_expr | m_expr '*' u_expr
+       | m_expr "//" u_expr | m_expr "/" u_expr
+       | m_expr '%' u_expr
+       ;
+
+u_expr : power | '-' u_expr | '+' u_expr
+       ;
+
+power : primary ("**"! u_expr)?
+      ;
+
+keyword_item : identifier '='! expression
              ;
 
-parameter : identifier
-          ;
+keyword_arguments : keyword_item (','! keyword_item)*
+                  ;            
 
-funcname : identifier
+positional_arguments : expression (','! expression)*
+                     ;
+
+argument_list : positional_arguments (','! keyword_arguments)?
+              | keyword_arguments
+              ;
+
+call : primary '('! argument_list (','!)? ')'!
+     ;
+
+ellipsis : "..."!
          ;
 
-classdef : "class" classname (inheritance)? ":"! suite
-         ;
-
-inheritance : "("! (expression_list)? ")"!
+upper_bound : expression
             ;
 
-classname : identifier
-          ;
+lower_bound : expression
+            ;         
 
-file_input : ('\n'! | statement)*
+short_slice : (lower_bound)? ':'! (upper_bound)?
+            ;
+
+proper_slice : short_slice
+             ;
+         
+slice_item : expression | proper_slice | ellipsis
+           ;
+         
+slice_list : slice_item (','! slice_item)* (','!)?
            ;
 
-interactive_input : (stmt_list)? '\n'!
-                  | compound_stmt '\n'!
+simple_slicing : primary '['! short_slice ']'!
+               ;
+
+slicing : simple_slicing
+        ;
+
+subscription : primary '['! expression_list ']'!
+             ;
+             
+attributeref : primary '.'! identifier
+             ;
+
+primary : atom | attributeref | subscription
+        | slicing | call
+        ;
+
+string_conversion : '`'! expression_list '`'!
                   ;
 
-eval_input : expression_list ('\n'!)*
+key_datum : expression ':'! expression
+          ;
+
+key_datum_list : key_datum (','! key_datum)* (','!)?
+               ;
+
+dict_display : '{'! (key_datum_list)? '}'!
+             ;
+          
+list_if : "if" old_expression (list_iter)?
+        ;
+          
+list_iter : list_for | list_if
+          ;
+
+old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
+
+
+list_for : "for"! target_list "in"! old_expression_list (list_iter)?
+         ;
+
+list_comprehension : expression list_for
+                   ;
+
+list_display : '['! (expression_list | list_comprehension)? ']'!
+             ;
+
+parenth_form : '('! (expression_list)? ')'!
+             ;
+             
+stringliteral : STRING | RAWSTRING
+              ;
+
+literal : stringliteral | integer
+        ;
+
+enclosure : parenth_form | list_display
+          | dict_display | string_conversion
+          ;
+
+atom : identifier | literal | enclosure
+     ;
+
+integer : INT_LITERAL
+        ;
+
+identifier : ID
            ;
 
-input_input : expression_list '\n'!
-            ;
-
+keyword : "and"     | "del"     | "from"    | "not"     | "while"
+        | "as"      | "elif"    | "global"  | "or"      | "with"
+        | "assert"  | "else"    | "if"      | "pass"    | "yield"
+        | "break"   | "except"  | "import"  | "print"
+        | "class"   | "exec"    | "in"      | "raise"
+        | "continue"| "finally" | "is"      | "return"
+        | "def"     | "for"     | "lambda"  | "try"
+        ;
+        
 /* Shoulda been built-in */
 _DIGIT : ('0' .. '9')
        ;
