@@ -86,6 +86,7 @@
 %token SIMPLE_STMT "@simple"
 
 %token DEF "@def"
+%token FORMALS "@formals_list"
 %token PRINTLN "@println"
 %token BLOCK "@block"
 %token CLASS "@class"
@@ -159,7 +160,7 @@ parameter : identifier
 defparameter : parameter ("="! expression)?
              ;
 
-parameter_list : (defparameter ","!)* (defparameter (","!)?)
+parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, $*); }
                ;
 
 funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite { $$ = $^(DEF, $funcname, $parameter_list, $suite); }

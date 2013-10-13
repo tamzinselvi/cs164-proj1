@@ -1,0 +1,87 @@
+Compilation : '(' "module" N Stmt* ')' == COMPLETE (trivial.py)
+
+N : INT == COMPLETE (LINE NUMBER)
+
+StringLiteral: '(' "string_literal" N STRING ')' == COMPLETE (strings.py)
+
+Id: '(' "id" N ID ')' == COMPLETE
+
+TypedId : '(' "typed_id" N Id Type ')' == INCOMPLETE
+
+Type : TypeId
+  | TypeVar
+  | '(' "function_type" N Type TypeList0 ')' == INCOMPLETE
+
+TypeId : '(' "type" N Id TypeList0 ')' == INCOMPLETE
+Type0 : Type | "()"                    == INCOMPLETE
+TypeVar: '(' "type_var" N ID ')'       == INCOMPLETE
+
+TypeList0: '(' "type_list" N Type* ')' == INCOMPLETE
+
+Formals : '(' "formals_list" N (Id | TypedId)* ')'  == INCOMPLETE
+
+TypeFormals : '(' "type_formals_list" N TypeVar* ')' == INCOMPLETE
+
+Pair : '(' "pair" N Expr Expr')'  == COMPLETE(Needs tests)
+
+RightSide : Expr | Assign         == INCOMPLETE
+
+SimpleTarget:                     == INCOMPLETE
+      Id
+    | '(' "attributeref" N Expr Id ')'
+    | '(' "subscription" N Expr Expr ')'
+    | '(' "slicing" N Expr Expr0 Expr0 ')'
+
+Target:                           == INCOMPLETE
+     SimpleTarget
+    | TypedId
+
+TargetList:                       == INCOMPLETE
+     Target
+    | '(' "target_list" N Target+ ')'
+
+Assign :                          == INCOMPLETE
+   '(' "assign" N TargetList RightSide ')'
+
+Block: '(' "block" N Stmt* ')'    == COMPLETE (Needs tests)
+
+StmtList : '(' "stmt_list" N Stmt* ')'  == INCOMPLETE
+
+Stmt0 : Stmt | "()"                    == INCOMPLETE
+
+Stmt: Expr                            == INCOMPLETE
+    | Assign
+    | StmtList
+    | '(' "print" N Expr0 ExprList ')'
+    | '(' "println" N Expr0 ExprList ')'
+    | '(' "return" N Expr0 ')'
+    | '(' "break" N ')'
+    | '(' "continue" N ')'
+    | '(' "if" N Expr Stmt Stmt0 ')'
+    | '(' "while" N Expr Stmt Stmt0 ')'
+    | '(' "for" N TargetList Expr Stmt Stmt0 ')'
+    | '(' "def" N Id FormalsType0 Block ')'
+    | '(' "class" N Id TypeFormals Block ')'
+    | '(' "native" N StringLiteral ')'
+
+ExprList : '(' "expr_list" N Expr* ')'   == COMPLETE (Needs tests)
+
+Expr0 : Expr | "()"                     == INCOMPLETE
+
+Expr : '(' "binop" N Expr Id Expr ')'    == INCOMPLETE
+   |   '(' "left_compare" N Expr Id Expr ')'
+   |   '(' "compare" N Expr Id Expr ')'
+   |   '(' "unop" N Id Expr ')'
+   |   '(' "if_expr" N Expr Expr Expr ')'
+   |   '(' "and" N Expr Expr ')'
+   |   '(' "or" N Expr Expr ')'
+   |   '(' "tuple" N Expr* ')'
+   |   '(' "list_display" N Expr* ')'
+   |   '(' "call" N Expr ExprList ')'
+   |   '(' "call" N TypeId ExprList ')'
+   |   '(' "dict_display" N Pair* ')'
+   |   '(' "int_iteral" N INT ')'
+   |   StringLiteral
+   |   SimpleTarget
+
+There is a Type0 in AST for funcdef after formals_list (parameters)..Not sure what its referencing.
