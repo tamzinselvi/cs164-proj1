@@ -196,7 +196,8 @@ if_stmt : "if"! expression ":"! suite
             ("else"! ":" suite)? { $$ = $^(IF, $*); }
             ;
 
-stmt_list : simple_stmt (";"! simple_stmt)* (";"!)? { $$ = $^(STMT_LIST, $*); }
+stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)? 
+          | simple_stmt (";"!)?
           ;
 
 statement : stmt_list '\n'! | compound_stmt
@@ -254,7 +255,7 @@ target_list : ("("!)? target (","! target)* (","!)? (")"!)? { $$ = $^(TARLIST, $
 assignment_stmt : (target_list '='!)+ expression_list
                 ;
 
-expression_stmt : expression_list
+expression_stmt : statement_list
                 ;
 
 simple_stmt : expression_stmt
@@ -271,10 +272,13 @@ assignment_list : expression (','! expression)* (','!)? { $$ = $*; }
 expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
                 ;
                 
-print_list : expression (','! expression)* (','!)
+statement_list : expression (','! expression)* (','!)? { $$ = $^(STMT_LIST, $*); }
+               ;
+                
+print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
            ;
            
-println_list : expression (','! expression)*
+println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
             ;
 
 not_test : comparison | "not"! not_test
