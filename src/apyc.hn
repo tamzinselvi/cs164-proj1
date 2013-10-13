@@ -95,6 +95,10 @@
 %token MODULE "@module"
 %token BINOP "@binop"
 %token UNOP "@unop"
+%token ASSIGN "@assign"
+%token DICT_DISP "@dict_display"
+%token PAIR "@pair"
+%token BREAK "@break"
 %token INDENT
 %token DEDENT
 
@@ -241,6 +245,9 @@ simple_stmt : expression_stmt
             | continue_stmt
             ;
 
+assignment_list : expression (','! expression)* (','!)? { $$ = $*; }
+                ;
+
 expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
                 ;
 
@@ -340,13 +347,14 @@ primary : atom | attributeref | subscription
 string_conversion : '`'! expression_list '`'!
                   ;
 
-key_datum : expression ':'! expression
+key_datum : expression ':'! expression { $$ = $^(PAIR, $*); }
           ;
 
 key_datum_list : key_datum (','! key_datum)* (','!)?
                ;
 
-dict_display : '{'! (key_datum_list)? '}'!
+dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP, $^(EMPTY)); }
+             | '{'! (key_datum_list) '}'! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
 
 list_if : "if" old_expression (list_iter)?
@@ -489,12 +497,12 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 /* Comments and blank lines */
 _SAMELINE : _ANY - ('\n');
 * : (' ' | '\t' | '\r')* '#' _SAMELINE* _EOL %prefer { YYIGNORE; }
-  | _BOL  (' ' | '\t' | '\r')* _EOL %prefer { YYIGNORE; }
+  | _BOL  (' ' | '\t' | '\r')* _EOL { YYIGNORE; }
   ;
 
 
 /* Handle indentation at the beginning of a line. */
-* : _BOL (' ' | '\t')+ %prefer { YYSET_TOKEN(processIndent($TEXT)); }
+* : _BOL (' ' | '\t')* %prefer { processIndent($TEXT); }
   ;
 
 
@@ -562,8 +570,8 @@ indentLength (const char* text)
     return blnks;
 }
 
-int
-processIndent( const char* text )
+
+void processIndent( const char* text)
 {
   int length = indentLength(text);
   if ( indents.empty() ) {
@@ -571,20 +579,21 @@ processIndent( const char* text )
   }
   if ( length > indents.top()  ) {
     indents.push(length);
-    return INDENT;
+    yyqueue_token( INDENT, 0 );
   } else if ( length < indents.top() ) {
-    cout << indents.size() << endl;
     while ( !indents.empty() ) {
       indents.pop();
       if ( length < indents.top() ) {
+        yyqueue_token( DEDENT, 0 );
         continue;
       }
       if ( length != indents.top()){
         error(yysource_location(), "inconsistent indentation");
       }
-      return DEDENT;
+      if ( length == indents.top() ) {
+        yyqueue_token( DEDENT, 0 );
+        break;
+      }
     }
   }
-
-  return -1;
 }
