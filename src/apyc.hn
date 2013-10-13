@@ -27,7 +27,7 @@
    *  right-hand-side semantic values of a binop production (consisting of an
    *  AST for the first operand, a token for the operator, and an AST for the
    *  second operand). */
-  static AST_Ptr make_binop (const List_Ptr& operands);
+  static AST_Ptr make_binop (const List_Ptr& operands, const int token);
 
   /** Return a new ID node, where the text of the identifier is given by
    *  TOKEN. */
@@ -112,6 +112,8 @@
 %token BREAK "@break"
 %token INDENT
 %token DEDENT
+%token COMPARE "@compare"
+%token LEFT_COMPARE "@left_compare"
 
 %%
 
@@ -303,22 +305,26 @@ comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
               | "is" ("not")? | ("not")? "in"
               ;
 
-comparison : a_expr (comp_operator! a_expr)*
+comparison : (left_comparison|a_expr) comp_operator a_expr %expand { $$ = make_binop($*, COMPARE); }
+           | a_expr
            ;
 
-a_expr : m_expr | a_expr '+' m_expr
-       | a_expr '-' m_expr
+left_comparison : (left_comparison|a_expr) comp_operator a_expr %expand { $$ = make_binop($*, LEFT_COMPARE); }
+                ;
+
+a_expr : m_expr 
+       | a_expr ('-'|'+') m_expr %expand { $$ = make_binop($*, BINOP); }
        ;
 
-m_expr : u_expr | m_expr '*' u_expr
-       | m_expr "//" u_expr | m_expr "/" u_expr
-       | m_expr '%' u_expr
+m_expr : u_expr 
+       | m_expr ('*'|"//"|"/"|'%') u_expr %expand { $$ = make_binop($*, BINOP); }
        ;
 
-u_expr : power | '-' u_expr | '+' u_expr
+u_expr : power 
+       | ('-'|'+') u_expr %expand { $$ = make_unop($*); }
        ;
 
-power : primary ("**"! u_expr)?
+power : primary ("**" u_expr)? { if ( ! $u_expr.missing() ) { $$ = make_binop( $*, BINOP); } }
       ;
 
 keyword_item : identifier '='! expression
@@ -542,9 +548,9 @@ make_unop (const List_Ptr& operands)
 }
 
 static AST_Ptr
-make_binop (const List_Ptr& operands)
+make_binop (const List_Ptr& operands, const int token)
 {
-    return YYMAKE_TREE (BINOP, operands->at (0), make_id (operands->at (1)),
+    return YYMAKE_TREE (token, operands->at (0), make_id (operands->at (1)),
                         operands->at (2));
 }
 
