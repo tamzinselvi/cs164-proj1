@@ -84,10 +84,20 @@
  */
 
 %token SIMPLE_STMT "@simple"
-
+%token FOR "@for"
+%token WHILE "@while"
+%token IF "@if"
 %token DEF "@def"
+%token STMT_LIST "@stmt_list"
+%token NATIVE "@native"
+%token SLICE "@slicing"
+%token SUBSCRIPT "@subscription"
+%token ATTREF "@attributeref"
+%token TARLIST "@target_list"
+%token TYPED "@typed_id"
 %token FORMALS "@formals_list"
 %token PRINTLN "@println"
+%token PRINT "@print"
 %token BLOCK "@block"
 %token CLASS "@class"
 %token RETURN "@return"
@@ -157,28 +167,36 @@ funcname : identifier
 parameter : identifier
           ;
 
-defparameter : parameter ("="! expression)?
+defparameter : parameter
+             ;
+
+defparameter : parameter "="! expression { $$ = $^(TYPED, $*); }
              ;
 
 parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, $*); }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite { $$ = $^(DEF, $funcname, $parameter_list, $suite); }
+funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite 
+            { $$ = $^(DEF, $funcname, $parameter_list, $suite); }
+        | "def"! funcname "("! (parameter_list)? ")"! ":"! 
+            ("native"! stringliteral '\n'! 
+            | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
+           { $$ = $^(DEF, $funcname, $parameter_list, $^(NATIVE, $stringliteral)); }
         ;
 
 for_stmt : "for"! target_list "in"! expression_list
-            ":"! suite ("else"! ":"! suite)?
+            ":"! suite ("else"! ":"! suite)? { $$ = $^(FOR, $*); }
             ;
 
-while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)?
+while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)? { $$ = $^(WHILE, $*); }
             ;
 
 if_stmt : "if"! expression ":"! suite
             ( "elif"! expression ":"! suite)*
-            ("else"! ":" suite)?
+            ("else"! ":" suite)? { $$ = $^(IF, $*); }
             ;
 
-stmt_list : simple_stmt (";"! simple_stmt)* (";"!)?
+stmt_list : simple_stmt (";"! simple_stmt)* (";"!)? { $$ = $^(STMT_LIST, $*); }
           ;
 
 statement : stmt_list '\n'! | compound_stmt
@@ -213,7 +231,8 @@ break : "break"
 return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
             ;
 
-print_stmt : "print"! (expression_list)? { $$ = $^(PRINTLN, $^(EMPTY), $expression_list); }
+print_stmt : "print"! print_list { $$ = $^(PRINT, $^(EMPTY), $print_list); }
+            | "print"! (println_list)? { $$ = $^(PRINTLN, $^(EMPTY), $println_list); }
            ;
 
 pass_stmt : pass { $$ = AST::make_token(SIMPLE_STMT, $pass.text_size(), $pass.c_text()); }
@@ -228,8 +247,8 @@ target : identifier
        | slicing
        ;
 
-target_list : ("("!)? target (","! target)* (","!)? (")"!)?
-            | ("["!)? target (","! target)* (","!)? ("]"!)?
+target_list : ("("!)? target (","! target)* (","!)? (")"!)? { $$ = $^(TARLIST, $*); }
+            | ("["!)? target (","! target)* (","!)? ("]"!)? { $$ = $^(TARLIST, $*); }
             ;
 
 assignment_stmt : (target_list '='!)+ expression_list
@@ -251,6 +270,12 @@ assignment_list : expression (','! expression)* (','!)? { $$ = $*; }
 
 expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
                 ;
+                
+print_list : expression (','! expression)* (','!)
+           ;
+           
+println_list : expression (','! expression)*
+            ;
 
 not_test : comparison | "not"! not_test
          ;
@@ -320,25 +345,16 @@ lower_bound : expression
 short_slice : (lower_bound)? ':'! (upper_bound)?
             ;
 
-proper_slice : short_slice
-             ;
-
-slice_item : expression | proper_slice | ellipsis
-           ;
-
-slice_list : slice_item (','! slice_item)* (','!)?
-           ;
-
 simple_slicing : primary '['! short_slice ']'!
                ;
 
-slicing : simple_slicing
+slicing : simple_slicing { $$ = $^(SLICE, $simple_slicing); }
         ;
 
-subscription : primary '['! expression_list ']'!
+subscription : primary '['! expression_list ']'! { $$ = $^(SUBSCRIPT, $*); }
              ;
 
-attributeref : primary '.'! identifier
+attributeref : primary '.'! identifier { $$ = $^(ATTREF, $*); }
              ;
 
 primary : atom | attributeref | subscription
