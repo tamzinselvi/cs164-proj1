@@ -84,9 +84,13 @@
  */
 
 %token SIMPLE_STMT "@simple"
+%token CALL "@call"
+%token ASGN
+%token EQUAL
 %token FOR "@for"
-%token WHILE "@while"
-%token IF "@if"
+%token IF "@if_expr"
+%token TUPLE "@tuple"
+%token LIST_DISP "@list_display"
 %token DEF "@def"
 %token STMT_LIST "@stmt_list"
 %token NATIVE "@native"
@@ -96,11 +100,11 @@
 %token TARLIST "@target_list"
 %token TYPED "@typed_id"
 %token FORMALS "@formals_list"
+%token TYPE_FOR "@type_formals_list"
 %token PRINTLN "@println"
 %token PRINT "@print"
 %token BLOCK "@block"
 %token CLASS "@class"
-%token RETURN "@return"
 %token EMPTY
 %token EXPR_LIST "@expr_list"
 %token MODULE "@module"
@@ -138,11 +142,8 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ":"! suite { $$ = $^(CLASS, $classname, $suite); }
+classdef : "class" classname ":"! suite { AST_Ptr formal = $^(TYPE_FOR); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $suite); }
          ;
-
-literal : stringliteral | integer
-        ;
 
 stringpart : STRING
               | RAWSTRING
@@ -150,18 +151,6 @@ stringpart : STRING
 
 stringliteral : stringliteral stringpart { $stringliteral.value()->as_token()->append_text($stringpart.value()->as_token()->string_text()); $$ = $stringliteral; }
               ;
-
-parenth_form : '('! (expression_list)? ')'!
-             ;
-
-list_display : '['! (expression_list | list_comprehension)? ']'!
-             ;
-
-list_comprehension : expression list_for
-                   ;
-
-list_for : "for"! target_list "in"! old_expression_list (list_iter)?
-         ;
 
 funcname : identifier
          ;
@@ -172,15 +161,16 @@ parameter : identifier
 defparameter : parameter
              ;
 
-defparameter : parameter "="! expression { $$ = $^(TYPED, $*); }
+defparameter : parameter ASGN! expression { $$ = $^(TYPED, $*); }
              ;
 
 parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, $*); }
+               | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list)? ")"! ":"! suite 
-            { $$ = $^(DEF, $funcname, $parameter_list, $suite); }
-        | "def"! funcname "("! (parameter_list)? ")"! ":"! 
+funcdef : "def"! funcname "("! (parameter_list) ")"! ":"! suite 
+            { $$ = $^(DEF, $funcname, $parameter_list, $^(EMPTY), $suite); }
+        | "def"! funcname "("! (parameter_list) ")"! ":"! 
             ("native"! stringliteral '\n'! 
             | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
            { $$ = $^(DEF, $funcname, $parameter_list, $^(NATIVE, $stringliteral)); }
@@ -190,7 +180,7 @@ for_stmt : "for"! target_list "in"! expression_list
             ":"! suite ("else"! ":"! suite)? { $$ = $^(FOR, $*); }
             ;
 
-while_stmt : "while"! expression ":"! suite ("else"! ":"! suite)? { $$ = $^(WHILE, $*); }
+while_stmt : "while"^ expression ":"! suite ("else"! ":"! suite)?
             ;
 
 if_stmt : "if"! expression ":"! suite
@@ -231,7 +221,7 @@ break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $brea
 break : "break"
       ;
 
-return_stmt : "return"! (expression_list)? { $$ = $^(RETURN, $*); }
+return_stmt : "return"^ (expression_list)?
             ;
 
 print_stmt : "print"! print_list { $$ = $^(PRINT, $^(EMPTY), $print_list); }
@@ -254,10 +244,10 @@ target_list : ("("!)? target (","! target)* (","!)? (")"!)? { $$ = $^(TARLIST, $
             | ("["!)? target (","! target)* (","!)? ("]"!)? { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : (target_list '='!)+ expression_list
+assignment_stmt : (target_list ASGN!)+ assignment_list { $$ = $^(ASSIGN, $*); }
                 ;
 
-expression_stmt : statement_list
+expression_stmt : expression_list { $$ = $^(STMT_LIST, $*); }
                 ;
 
 simple_stmt : expression_stmt
@@ -268,15 +258,14 @@ simple_stmt : expression_stmt
             | continue_stmt
             ;
 
-assignment_list : expression (','! expression)* (','!)? { $$ = $*; }
+assignment_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
+                | expression (','! expression)+ { $$ = $^(TUPLE, $*); }
+                | expression
                 ;
 
-expression_list : expression (','! expression)* (','!)? { $$ = $^(EXPR_LIST, $*); }
+expression_list : expression (','! expression)* (','!)?
                 ;
-                
-statement_list : expression (','! expression)* (','!)? { $$ = $^(STMT_LIST, $*); }
-               ;
-                
+
 print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
            ;
            
@@ -286,13 +275,14 @@ println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
 not_test : comparison | "not"! not_test
          ;
 
-and_test : not_test | and_test "and"! not_test
+and_test : not_test | and_test "and"^ not_test
          ;
 
-or_test : and_test | or_test "or"! and_test
+or_test : and_test | or_test "or"^ and_test
         ;
 
-conditional_expression : or_test ("if"! or_test "else"! expression)?
+conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ = $^(IF, $P1, $P2, $P3); }
+                       | or_test
                        ;
 
 old_expression : or_test
@@ -301,7 +291,7 @@ old_expression : or_test
 expression : conditional_expression
            ;
 
-comp_operator : '<' | '>' | "==" | ">=" | "<=" | "!="
+comp_operator : '<' | '>' | EQUAL | ">=" | "<=" | "!="
               | "is" ("not")? | ("not")? "in"
               ;
 
@@ -327,7 +317,7 @@ u_expr : power
 power : primary ("**" u_expr)? { if ( ! $u_expr.missing() ) { $$ = make_binop( $*, BINOP); } }
       ;
 
-keyword_item : identifier '='! expression
+keyword_item : identifier ASGN! expression
              ;
 
 keyword_arguments : keyword_item (','! keyword_item)*
@@ -340,7 +330,7 @@ argument_list : positional_arguments (','! keyword_arguments)?
               | keyword_arguments
               ;
 
-call : primary '('! argument_list (','!)? ')'!
+call : primary '('! argument_list (','!)? ')'! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
      ;
 
 ellipsis : "..."!
@@ -352,13 +342,19 @@ upper_bound : expression
 lower_bound : expression
             ;
 
-short_slice : (lower_bound)? ':'! (upper_bound)?
+short_slice : (lower_bound) ':'! (upper_bound)
+            | ':'! upper_bound { $$ = $^(EMPTY), $upper_bound; }
+            | lower_bound ':'! { $$ = $lower_bound, $^(EMPTY); }
+            | ':'!             { $$ = $^(EMPTY), $^(EMPTY); }
             ;
 
-simple_slicing : primary '['! short_slice ']'!
+simple_slicing : primary '['! (lower_bound) ':'! (upper_bound) ']'! { $$ = $^(SLICE, $*); }
+               | primary '['! ':'! (upper_bound) ']'! { $$ = $^(SLICE, $primary, $^(EMPTY), $upper_bound); }
+               | primary '['! (lower_bound) ':'! ']'! { $$ = $^(SLICE, $primary, $lower_bound, $^(EMPTY)); }
+               | primary '['! ':'! ']'!               { $$ = $^(SLICE, $primary,  $^(EMPTY), $^(EMPTY)); }
                ;
 
-slicing : simple_slicing { $$ = $^(SLICE, $simple_slicing); }
+slicing : simple_slicing 
         ;
 
 subscription : primary '['! expression_list ']'! { $$ = $^(SUBSCRIPT, $*); }
@@ -371,9 +367,6 @@ primary : atom | attributeref | subscription
         | slicing | call
         ;
 
-string_conversion : '`'! expression_list '`'!
-                  ;
-
 key_datum : expression ':'! expression { $$ = $^(PAIR, $*); }
           ;
 
@@ -384,24 +377,12 @@ dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP, $^(EMPTY)); }
              | '{'! (key_datum_list) '}'! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
 
-list_if : "if" old_expression (list_iter)?
-        ;
-
-list_iter : list_for | list_if
-          ;
-
 old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
 
-list_for : "for"! target_list "in"! old_expression_list (list_iter)?
-         ;
-
-list_comprehension : expression list_for
-                   ;
-
-list_display : '['! (expression_list | list_comprehension)? ']'!
+list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DISP, $*); }
              ;
 
-parenth_form : '('! (expression_list)? ')'!
+parenth_form : '('! (assignment_list)? ')'!
              ;
 
 stringliteral : STRING | RAWSTRING
@@ -411,7 +392,7 @@ literal : stringliteral | integer
         ;
 
 enclosure : parenth_form | list_display
-          | dict_display | string_conversion
+          | dict_display
           ;
 
 atom : identifier | literal | enclosure
@@ -448,6 +429,13 @@ _LETTER : (_LOWER | _UPPER)
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
+   
+/* Operators */
+ASGN : '='
+      ;
+      
+EQUAL : "=="
+      ;
 
 /* Integers */
 _OCTDIGIT : ('0' .. '7')
@@ -524,9 +512,8 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 /* Comments and blank lines */
 _SAMELINE : _ANY - ('\n');
 * : (' ' | '\t' | '\r')* '#' _SAMELINE* _EOL %prefer { YYIGNORE; }
-  | _BOL  (' ' | '\t' | '\r')* _EOL { YYIGNORE; }
+  | _BOL  (' ' | '\t' | '\r' | '\n')* _EOL %prefer { YYIGNORE; }
   ;
-
 
 /* Handle indentation at the beginning of a line. */
 * : _BOL (' ' | '\t')* %prefer { processIndent($TEXT); }

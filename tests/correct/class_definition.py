@@ -2,5 +2,6 @@ class TestClass:
   def a():
     print "very cool"
 
-class OtherTestClass:
-  print a
+  def b():
+    print "not cool"
+
