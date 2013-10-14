@@ -83,41 +83,41 @@
  * node operators to printable strings.
  */
 
-%token SIMPLE_STMT "@simple"
-%token CALL "@call"
 %token ASGN
-%token EQUAL
-%token FOR "@for"
-%token IF "@if_expr"
-%token TUPLE "@tuple"
-%token LIST_DISP "@list_display"
-%token DEF "@def"
-%token STMT_LIST "@stmt_list"
-%token NATIVE "@native"
-%token SLICE "@slicing"
-%token SUBSCRIPT "@subscription"
-%token ATTREF "@attributeref"
-%token TARLIST "@target_list"
-%token TYPED "@typed_id"
-%token FORMALS "@formals_list"
-%token TYPE_FOR "@type_formals_list"
-%token PRINTLN "@println"
-%token PRINT "@print"
-%token BLOCK "@block"
-%token CLASS "@class"
-%token EMPTY
-%token EXPR_LIST "@expr_list"
-%token MODULE "@module"
-%token BINOP "@binop"
-%token UNOP "@unop"
 %token ASSIGN "@assign"
-%token DICT_DISP "@dict_display"
-%token PAIR "@pair"
+%token ATTREF "@attributeref"
+%token BINOP "@binop"
+%token BLOCK "@block"
 %token BREAK "@break"
-%token INDENT
-%token DEDENT
+%token CALL "@call"
+%token CLASS "@class"
 %token COMPARE "@compare"
+%token DEDENT
+%token DEF "@def"
+%token DICT_DISP "@dict_display"
+%token EMPTY
+%token EQUAL
+%token EXPR_LIST "@expr_list"
+%token FOR "@for"
+%token FORMALS "@formals_list"
+%token IF "@if_expr"
+%token INDENT
 %token LEFT_COMPARE "@left_compare"
+%token LIST_DISP "@list_display"
+%token MODULE "@module"
+%token NATIVE "@native"
+%token PAIR "@pair"
+%token PRINT "@print"
+%token PRINTLN "@println"
+%token SIMPLE_STMT "@simple"
+%token SLICE "@slicing"
+%token STMT_LIST "@stmt_list"
+%token SUBSCRIPT "@subscription"
+%token TARLIST "@target_list"
+%token TUPLE "@tuple"
+%token TYPED "@typed_id"
+%token TYPE_FOR "@type_formals_list"
+%token UNOP "@unop"
 
 %%
 
@@ -168,12 +168,12 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list) ")"! ":"! suite 
+funcdef : "def"! funcname "("! (parameter_list) ")"! ":"! suite
             { $$ = $^(DEF, $funcname, $parameter_list, $^(EMPTY), $suite); }
-        | "def"! funcname "("! (parameter_list) ")"! ":"! 
-            ("native"! stringliteral '\n'! 
+        | "def"! funcname "("! (parameter_list) ")"! ":"!
+            ("native"! stringliteral '\n'!
             | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
-           { $$ = $^(DEF, $funcname, $parameter_list, $^(NATIVE, $stringliteral)); }
+           { $$ = $^(DEF, $funcname, $parameter_list, $^(BLOCK, $^(NATIVE, $stringliteral))); }
         ;
 
 for_stmt : "for"! target_list "in"! expression_list
@@ -188,7 +188,7 @@ if_stmt : "if"! expression ":"! suite
             ("else"! ":" suite)? { $$ = $^(IF, $*); }
             ;
 
-stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)? 
+stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
           | simple_stmt (";"!)?
           ;
 
@@ -244,7 +244,7 @@ target_list : ("("!)? target (","! target)* (","!)? (")"!)? { $$ = $^(TARLIST, $
             | ("["!)? target (","! target)* (","!)? ("]"!)? { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : (target_list ASGN!)+ assignment_list { $$ = $^(ASSIGN, $*); }
+assignment_stmt : (expression_list ASGN!)+ assignment_list { $$ = $^(ASSIGN, $*); }
                 ;
 
 expression_stmt : expression_list { $$ = $^(STMT_LIST, $*); }
@@ -268,7 +268,7 @@ expression_list : expression (','! expression)* (','!)?
 
 print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
            ;
-           
+
 println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
             ;
 
@@ -302,15 +302,15 @@ comparison : (left_comparison|a_expr) comp_operator a_expr %expand { $$ = make_b
 left_comparison : (left_comparison|a_expr) comp_operator a_expr %expand { $$ = make_binop($*, LEFT_COMPARE); }
                 ;
 
-a_expr : m_expr 
+a_expr : m_expr
        | a_expr ('-'|'+') m_expr %expand { $$ = make_binop($*, BINOP); }
        ;
 
-m_expr : u_expr 
+m_expr : u_expr
        | m_expr ('*'|"//"|"/"|'%') u_expr %expand { $$ = make_binop($*, BINOP); }
        ;
 
-u_expr : power 
+u_expr : power
        | ('-'|'+') u_expr %expand { $$ = make_unop($*); }
        ;
 
@@ -354,7 +354,7 @@ simple_slicing : primary '['! (lower_bound) ':'! (upper_bound) ']'! { $$ = $^(SL
                | primary '['! ':'! ']'!               { $$ = $^(SLICE, $primary,  $^(EMPTY), $^(EMPTY)); }
                ;
 
-slicing : simple_slicing 
+slicing : simple_slicing
         ;
 
 subscription : primary '['! expression_list ']'! { $$ = $^(SUBSCRIPT, $*); }
@@ -429,11 +429,11 @@ _LETTER : (_LOWER | _UPPER)
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
-   
+
 /* Operators */
 ASGN : '='
       ;
-      
+
 EQUAL : "=="
       ;
 
@@ -519,7 +519,6 @@ _SAMELINE : _ANY - ('\n');
 * : _BOL (' ' | '\t')* %prefer { processIndent($TEXT); }
   ;
 
-
 /* Normally, throw away whitespace other than newline. */
 * : (' ' | '\t' | '\r')+
   ;
@@ -583,7 +582,6 @@ indentLength (const char* text)
     }
     return blnks;
 }
-
 
 void processIndent( const char* text)
 {
