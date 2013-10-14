@@ -85,8 +85,6 @@
 
 %token ASGN
 %token ASSIGN "@assign"
-%token TYPE_FOR "@type_formals_list"
-%token WHILE "@while"
 %token ATTREF "@attributeref"
 %token BINOP "@binop"
 %token BLOCK "@block"
@@ -102,6 +100,7 @@
 %token EXPR_LIST "@expr_list"
 %token FOR "@for"
 %token FORMALS "@formals_list"
+%token FUNCTION_TYPE "@function_type"
 %token IF "@if"
 %token INDENT
 %token LEFT_COMPARE "@left_compare"
@@ -118,8 +117,13 @@
 %token TARLIST "@target_list"
 %token TUPLE "@tuple"
 %token TYPED "@typed_id"
+%token TYPED_ID "@typed_id"
 %token TYPE_FOR "@type_formals_list"
+%token TYPE_LIST "@type_list"
+%token TYPE_OP
+%token TYPE_VAR "@type_var"
 %token UNOP "@unop"
+%token WHILE "@while"
 
 %%
 
@@ -146,13 +150,12 @@ classname : identifier
 
 classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite { AST_Ptr formal = $^(TYPE_FOR, $type_var); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
          ;
-         
+
 type_var : TYPE_VAR
-         ;
 
 stringpart : STRING
-              | RAWSTRING
-              ;
+           | RAWSTRING
+           ;
 
 stringliteral : stringliteral stringpart { $stringliteral.value()->as_token()->append_text($stringpart.value()->as_token()->string_text()); $$ = $stringliteral; }
               ;
@@ -166,7 +169,7 @@ parameter : identifier
 defparameter : parameter
              ;
 
-defparameter : parameter ASGN! expression { $$ = $^(TYPED, $*); }
+defparameter : parameter ASGN! expression { $$ = $^(TYPED_ID, $*); }
              ;
 
 parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, $*); }
@@ -196,7 +199,7 @@ if_stmt : "if"! expression ":"! while_suite
         | "if"! expression ":"! while_suite
             elif_suite { $$ = $^(IF, $*); }
             ;
-            
+
 elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
            | else_suite
            ;
@@ -204,7 +207,7 @@ elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
 else_suite : "else"! ":"! while_suite { $$ = $^(STMT_LIST, $*); }
            | /* empty */ { $$ = $^(EMPTY); }
            ;
-           
+
 stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
           | simple_stmt (";"!)?
           ;
@@ -212,10 +215,10 @@ stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
 statement : stmt_list '\n'! | compound_stmt
           ;
 
-suite : stmt_list '\n'! 
-      | '\n'! INDENT! statement+ DEDENT! 
+suite : stmt_list '\n'!
+      | '\n'! INDENT! statement+ DEDENT!
       ;
-      
+
 while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? '\n'! { $$ = $^(STMT_LIST, $*); }
       | simple_stmt (";"!)?
       | '\n'! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
@@ -271,13 +274,16 @@ target_list : ("("!) target (","! target)* (","!)? (")"!) { $$ = $^(TARLIST, $*)
 
 assignment_stmt : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
                 ;
-                
+
 as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
          | expression_list
          ;
 
 expression_stmt : expression_list { $$ = $^(STMT_LIST, $*); }
                 ;
+
+simple_stmt : assignment_stmt
+            ;
 
 simple_stmt : expression_stmt
             | assignment_stmt
@@ -302,7 +308,7 @@ println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
 not_test : comparison | "not" not_test { $$ = make_unop($*); }
          ;
 
-and_test : not_test | and_test "and"^ not_test 
+and_test : not_test | and_test "and"^ not_test
                     ;
 
 or_test : and_test | or_test "or"^ and_test
@@ -428,19 +434,44 @@ atom : identifier | literal | enclosure
 integer : INT_LITERAL
         ;
 
+typed_id : ID TYPE_OP! type { $$ = $^(TYPED_ID, $*); }
+         ;
+
+type : identifier
+     | type_var
+     | identifier "of"! '['! type_list0 ']'! { $$ = $^(FUNCTION_TYPE, $^(TYPE, $identifier, $^(TYPE_LIST)), $type_list0); }
+     ;
+
+type_var : TYPE_VAR
+         ;
+
+type_id : identifier ("of"! type)? { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
+        | identifier "of"! '['! type_list ']'! { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
+        ;
+
+type_list0 : type (','! type)* { $$ = $^(TYPE_LIST, $*); }
+           | /* empty */ { $$ = $^(TYPE_LIST); }
+           ;
+
+type0 : type
+      | /* empty */ { $$ = $^(EMPTY); }
+      ;
+
+type_formals : type_var (',' type_var)* { $^(TYPE_FOR, $*); }
+
 identifier : ID
            | illegal_keyword;
 
 keyword : "and"     | "not"      | "while"
         | "elif"    | "or"
-        | "else"    | "if"      | "pass"    
+        | "else"    | "if"      | "pass"
         | "break"   | "print"
         | "class"   | "in"
         | "continue"| "is"      | "return"
-        | "def"     | "for"   
+        | "def"     | "for"
         ;
 
-illegal_keyword : ( "as"     | "assert" | "del"     | "except" 
+illegal_keyword : ( "as"     | "assert" | "del"     | "except"
                   | "exec"   | "from"   | "finally" | "future"
                   | "global" | "import" | "lambda"
                   | "raise"  | "try" | "with" | "yield"
@@ -462,7 +493,7 @@ _LETTER : (_LOWER | _UPPER)
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
-   
+
 TYPE_VAR : '$' (_LETTER | '_') (_LETTER | _DIGIT | '_')*
          ;
 
@@ -472,6 +503,9 @@ ASGN : '='
 
 EQUAL : "=="
       ;
+
+TYPE_OP : "::"
+              ;
 
 /* Integers */
 _OCTDIGIT : ('0' .. '7')
@@ -584,7 +618,6 @@ make_id (AST_Ptr& token)
     result->set_loc (token->loc ());
     return result;
 }
-
 
 int
 AST::lineNumber ()
