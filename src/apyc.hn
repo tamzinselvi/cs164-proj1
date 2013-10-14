@@ -85,6 +85,7 @@
 
 %token ASGN
 %token ASSIGN "@assign"
+%token TYPE_FOR "@type_formals_list"
 %token WHILE "@while"
 %token ATTREF "@attributeref"
 %token BINOP "@binop"
@@ -143,7 +144,10 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ":"! suite { AST_Ptr formal = $^(TYPE_FOR); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
+classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite { AST_Ptr formal = $^(TYPE_FOR, $type_var); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
+         ;
+         
+type_var : TYPE_VAR
          ;
 
 stringpart : STRING
@@ -458,6 +462,9 @@ _LETTER : (_LOWER | _UPPER)
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
+   
+TYPE_VAR : '$' (_LETTER | '_') (_LETTER | _DIGIT | '_')*
+         ;
 
 /* Operators */
 ASGN : '='
@@ -577,6 +584,7 @@ make_id (AST_Ptr& token)
     result->set_loc (token->loc ());
     return result;
 }
+
 
 int
 AST::lineNumber ()

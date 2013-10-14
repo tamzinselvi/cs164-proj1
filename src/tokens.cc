@@ -1,4 +1,4 @@
-/* -*- mode: C++; c-file-style: "stroustrup"; indent-tabs-mode: nil; -*- */
+ /* -*- mode: C++; c-file-style: "stroustrup"; indent-tabs-mode: nil; -*- */
 
 /* tokens.cc: Definitions related to AST_Token and its subclasses. */
 
@@ -54,8 +54,27 @@ private:
 
 TOKEN_FACTORY(ID_Token, ID);
 
+/** Represents a type variable (ID). */
+class Type_Token : public AST_Token {
+private:
+    
+    void print (ostream& out, int indent) {
+        out << "(type_var " << lineNumber () << " " << identifier << ")";
+    }
+    
+    Type_Token* post_make()
+    {
+        identifier = string(as_chars(), text_size());
+        return this;
+    }
 
+    TOKEN_CONSTRUCTORS(Type_Token, AST_Token);
+    
+    string identifier;
+    
+};
 
+TOKEN_FACTORY(Type_Token, TYPE_VAR);
 
 
 /** Represents a simple statement. */
