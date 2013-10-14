@@ -85,6 +85,7 @@
 
 %token ASGN
 %token ASSIGN "@assign"
+%token WHILE "@while"
 %token ATTREF "@attributeref"
 %token BINOP "@binop"
 %token BLOCK "@block"
@@ -142,7 +143,7 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ":"! suite { AST_Ptr formal = $^(TYPE_FOR); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $suite); }
+classdef : "class" classname ":"! suite { AST_Ptr formal = $^(TYPE_FOR); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
          ;
 
 stringpart : STRING
@@ -169,7 +170,7 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                ;
 
 funcdef : "def"! funcname "("! (parameter_list) ")"! ":"! suite
-            { $$ = $^(DEF, $funcname, $parameter_list, $^(EMPTY), $suite); }
+            { $$ = $^(DEF, $funcname, $parameter_list, $^(EMPTY), $^(BLOCK, $suite)); }
         | "def"! funcname "("! (parameter_list) ")"! ":"!
             ("native"! stringliteral '\n'!
             | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
@@ -180,12 +181,13 @@ for_stmt : "for"! target_list "in"! expression_list
             ":"! suite ("else"! ":"! suite)? { $$ = $^(FOR, $*); }
             ;
 
-while_stmt : "while"^ expression ":"! suite ("else"! ":"! suite)?
+while_stmt : "while"! expression ":"! while_suite ("else"! ":"! while_suite) { $$ = $^(WHILE, $*); }
+           | "while"! expression ":"! while_suite { $$ = $^(WHILE, $expression, $while_suite, $^(EMPTY)); }
             ;
 
-if_stmt : "if"! expression ":"! suite
-            ( "elif"! expression ":"! suite)*
-            ("else"! ":" suite)? { $$ = $^(IF, $*); }
+if_stmt : "if"! expression ":"! while_suite
+            ( "elif"! expression ":"! while_suite)*
+            ("else"! ":"! while_suite)? { $$ = $^(IF, $*); }
             ;
 
 stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
@@ -195,8 +197,13 @@ stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
 statement : stmt_list '\n'! | compound_stmt
           ;
 
-suite : stmt_list '\n'! { $$ = $^(BLOCK, $*); }
-      | '\n'! INDENT! statement+ DEDENT! { $$ = $^(BLOCK, $*); }
+suite : stmt_list '\n'! 
+      | '\n'! INDENT! statement+ DEDENT! 
+      ;
+      
+while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? '\n'! { $$ = $^(STMT_LIST, $*); }
+      | simple_stmt (";"!)?
+      | '\n'! INDENT! statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
       ;
 
 compound_stmt : if_stmt

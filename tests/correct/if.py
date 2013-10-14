@@ -12,14 +12,14 @@ else:
 
 if (False):
   print "not this"
-else if (False):
+elif (False):
   print "not this"
 else:
   print "this"
 
 if (False):
   print "not this"
-else if (True):
+elif (True):
   print "this"
 else:
   print "not this"
