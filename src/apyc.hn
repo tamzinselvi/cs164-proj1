@@ -188,10 +188,19 @@ while_stmt : "while"! expression ":"! while_suite ("else"! ":"! while_suite) { $
             ;
 
 if_stmt : "if"! expression ":"! while_suite
-            ( "elif"! expression ":"! while_suite)*
-            ("else"! ":"! while_suite)? { $$ = $^(IF, $*); }
+            else_suite { $$ = $^(IF, $*); }
+        | "if"! expression ":"! while_suite
+            elif_suite { $$ = $^(IF, $*); }
             ;
+            
+elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
+           | else_suite
+           ;
 
+else_suite : "else"! ":"! while_suite { $$ = $^(STMT_LIST, $*); }
+           | /* empty */ { $$ = $^(EMPTY); }
+           ;
+           
 stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
           | simple_stmt (";"!)?
           ;
