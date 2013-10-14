@@ -244,8 +244,12 @@ target_list : ("("!)? target (","! target)* (","!)? (")"!)? { $$ = $^(TARLIST, $
             | ("["!)? target (","! target)* (","!)? ("]"!)? { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : (expression_list ASGN!)+ assignment_list { $$ = $^(ASSIGN, $*); }
+assignment_stmt : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
                 ;
+                
+as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
+         | expression_list
+         ;
 
 expression_stmt : expression_list { $$ = $^(STMT_LIST, $*); }
                 ;
@@ -258,12 +262,9 @@ simple_stmt : expression_stmt
             | continue_stmt
             ;
 
-assignment_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
+expression_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
                 | expression (','! expression)+ { $$ = $^(TUPLE, $*); }
                 | expression
-                ;
-
-expression_list : expression (','! expression)* (','!)?
                 ;
 
 print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
@@ -330,7 +331,7 @@ argument_list : positional_arguments (','! keyword_arguments)?
               | keyword_arguments
               ;
 
-call : primary '('! argument_list (','!)? ')'! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
+call : primary '('! (argument_list (','!)?)? ')'! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
      ;
 
 ellipsis : "..."!
@@ -382,7 +383,7 @@ old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
 list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DISP, $*); }
              ;
 
-parenth_form : '('! (assignment_list)? ')'!
+parenth_form : '('! (expression_list)? ')'!
              ;
 
 stringliteral : STRING | RAWSTRING
