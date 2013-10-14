@@ -238,7 +238,7 @@ print_stmt : "print"! print_list { $$ = $^(PRINT, $^(EMPTY), $print_list); }
             | "print"! (println_list)? { $$ = $^(PRINTLN, $^(EMPTY), $println_list); }
            ;
 
-pass_stmt : pass { $$ = AST::make_token(SIMPLE_STMT, $pass.text_size(), $pass.c_text()); }
+pass_stmt : pass { AST_Ptr tok = $^(STMT_LIST); tok->set_loc(yysource_location()); $$ = tok; }
           ;
 
 pass : "pass"
@@ -272,6 +272,7 @@ simple_stmt : expression_stmt
             | return_stmt
             | break_stmt
             | continue_stmt
+            | pass_stmt
             ;
 
 expression_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
@@ -415,16 +416,22 @@ integer : INT_LITERAL
         ;
 
 identifier : ID
-           ;
+           | illegal_keyword;
 
-keyword : "and"     | "del"     | "from"    | "not"     | "while"
-        | "as"      | "elif"    | "global"  | "or"      | "with"
-        | "assert"  | "else"    | "if"      | "pass"    | "yield"
-        | "break"   | "except"  | "import"  | "print"
-        | "class"   | "exec"    | "in"      | "raise"
-        | "continue"| "finally" | "is"      | "return"
-        | "def"     | "for"     | "lambda"  | "try"
+keyword : "and"     | "not"      | "while"
+        | "elif"    | "or"
+        | "else"    | "if"      | "pass"    
+        | "break"   | "print"
+        | "class"   | "in"
+        | "continue"| "is"      | "return"
+        | "def"     | "for"   
         ;
+
+illegal_keyword : ( "as"     | "assert" | "del"     | "except" 
+                  | "exec"   | "from"   | "finally" | "future"
+                  | "global" | "import" | "lambda"
+                  | "raise"  | "try" | "with" | "yield"
+                  ) { error(yysource_location(), "invalid keyword"); };
 
 /* Shoulda been built-in */
 _DIGIT : ('0' .. '9')
