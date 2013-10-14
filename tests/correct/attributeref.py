@@ -1,6 +1,8 @@
 class Test:
-  def j():
+  def j(self):
     print "Very Cool"
 
+x = Test()
 Test.j
+x.j()
 
