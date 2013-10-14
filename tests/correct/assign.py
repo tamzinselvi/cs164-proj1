@@ -1,6 +1,7 @@
-x = 1
-y = 2
-z = 3
+x = "Hello"
+y = " World"
+z = "!"
 print x
 print y
 print z
+
