@@ -8,3 +8,4 @@ print x.lower ()
 x = "center"
 print x.center(15, ".")
 print x.center(15, ".",)
+

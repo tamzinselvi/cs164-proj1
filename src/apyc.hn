@@ -417,10 +417,11 @@ keyword_item : identifier ASGN! expression
 keyword_arguments : keyword_item (','! keyword_item)*
                   ;
 
-positional_arguments : expression (','! expression)*
+positional_arguments : expression (','! expression)* (','!)?
                      ;
 
-argument_list : positional_arguments (','! keyword_arguments)?
+argument_list : positional_arguments (','! keyword_arguments)
+              | positional_arguments
               | keyword_arguments
               ;
 
