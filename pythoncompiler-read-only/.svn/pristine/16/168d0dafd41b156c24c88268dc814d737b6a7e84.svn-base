@@ -1,0 +1,55 @@
+
+(module 0
+  (import_module 2
+    (id 2 defns))
+  (def 3
+    (id 3 f)
+    (id_list 3
+      (id 3 n))
+    (block 3
+      (assign 4
+        (typed_id 4
+          (id 4 i)
+          (id 4 Int))
+        (int_literal 4 0))
+      (while 5
+        (comparison 5
+          (id 5 i)
+          (id 5 <=)
+          (id 5 n))
+        (if 6
+          (comparison 6
+            (int_literal 6 1)
+            (id 6 <)
+            (binop 6
+              (id 6 i)
+              (id 6 %)
+              (int_literal 6 7))
+            (id 6 <=)
+            (int_literal 6 2))
+          (print 7
+            ()
+            (expr_list 7
+              (id 7 i)))
+          (stmt_list 9
+            (assign 9
+              (id 9 s)
+              (binop 9
+                (id 9 i)
+                (id 9 +)
+                (int_literal 9 2)))
+            (aug_assign 10
+              (id 10 t)
+              (id 10 +)
+              (binop 10
+                (id 10 s)
+                (id 10 **)
+                (int_literal 10 2)))
+            (println 12
+              ()
+              (expr_list 12
+                (string_literal 12 "s =")
+                (id 12 s)
+                (string_literal 12 "t =")
+                (id 12 t)))))
+        ()))))

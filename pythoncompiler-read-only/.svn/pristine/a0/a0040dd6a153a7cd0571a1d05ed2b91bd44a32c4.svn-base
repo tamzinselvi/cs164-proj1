@@ -1,0 +1,54 @@
+
+(module 0
+  (def 1
+    (id 1 func)
+    (id_list 1
+      (id 1 a)
+      (id 1 b))
+    (block 1
+      (if 2
+        (or 2
+          (id 2 a)
+          (id 2 b))
+        (while 3
+          (id 3 b)
+          (stmt_list 4
+            (assign 4
+              (typed_id 4
+                (id 4 c)
+                (id 4 Bool))
+              (id 4 False))
+            (if 5
+              (id 5 a)
+              (assign 6
+                (id 6 b)
+                (id 6 c))
+              ()))
+          ())
+        ()))))(moduledecl  1  __builtin__  )
+(classdecl   2  Int  1 0 ( index_list )
+(classdecl   3  String  1 0 ( index_list )
+(classdecl   4  List  1 0 ( index_list )
+(classdecl   5  Tuple  1 0 ( index_list )
+(classdecl   6  Dict  1 0 ( index_list )
+(classdecl   7  Bool  1 0 ( index_list )
+(classdecl   8  File  1 0 ( index_list )
+(classdecl   9  Xrange  1 0 ( index_list )
+(classdecl   10  object  1 0 ( index_list  23 )
+(consdecl    11  None  1 (Type 0))
+(consdecl    12  True  1 (Type 7))
+(consdecl    13  False  1 (Type 7))
+(funcdecl    14  abs  1 (functype  (Type 0)(Type 0)))
+(funcdecl    15  bool  1 (functype  (Type 7)(Type 0)))
+(funcdecl    16  chr  1 (functype  (Type 3)(Type 2)))
+(funcdecl    17  cmp  1 (functype  (Type 2)(Type 0)(Type 0)))
+(funcdecl    18  len  1 (functype  (Type 2)(Type 0)))
+(funcdecl    19  list  1 (functype  (Type 4)(Type 0)))
+(funcdecl    20  open  1 (functype  (Type 8)(Type 3)(Type 3)))
+(funcdecl    21  ord  1 (functype  (Type 2)(Type 3)))
+(funcdecl    22  xrange  1 (functype  (Type 9)(Type 2)(Type 2)))
+(methoddecl    23  __init__  10 (functype  (Type 0)(Type 10)))
+(funcdecl    24  func  0 (functype  (Type 0)(Type 0)(Type 0)))
+(paramdecl    25  a  24 0 (Type 0))
+(paramdecl    26  b  24 1 (Type 0))
+(localdecl    27  c  24 (Type 7))

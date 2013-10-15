@@ -1,0 +1,67 @@
+
+(module 0
+  (class 6
+    (id 6 Hola)
+    (id 6 object)
+    (block 6
+      (assign 7
+        (typed_id 7
+          (id 7 c)
+          (id 7 Int))
+        (int_literal 7 8))
+      (def 9
+        (id 9 ff)
+        (id_list 9
+          (id 9 sdsd 27))
+        (block 9
+          (println 10
+            ()
+            (expr_list 10))))))
+  (assign 12
+    (typed_id 12
+      (id 12 y)
+      (id 12 Int))
+    (binop 12
+      (int_literal 12 5)
+      (id 12 +)
+      (binop 12
+        (int_literal 12 6)
+        (id 12 /)
+        (int_literal 12 8))))
+  (assign 13
+    (typed_id 13
+      (id 13 x)
+      (id 13 String))
+    (string_literal 13 "algo"))
+  (assign 15
+    (id 15 z 30)
+    (int_literal 15 7)))(moduledecl  1  __builtin__  )
+(classdecl   2  Int  1 0 ( index_list )
+(classdecl   3  String  1 0 ( index_list )
+(classdecl   4  List  1 0 ( index_list )
+(classdecl   5  Tuple  1 0 ( index_list )
+(classdecl   6  Dict  1 0 ( index_list )
+(classdecl   7  Bool  1 0 ( index_list )
+(classdecl   8  File  1 0 ( index_list )
+(classdecl   9  Xrange  1 0 ( index_list )
+(classdecl   10  object  1 0 ( index_list  23 )
+(consdecl    11  None  1 (Type 0))
+(consdecl    12  True  1 (Type 7))
+(consdecl    13  False  1 (Type 7))
+(funcdecl    14  abs  1 (functype  (Type 0)(Type 0)))
+(funcdecl    15  bool  1 (functype  (Type 7)(Type 0)))
+(funcdecl    16  chr  1 (functype  (Type 3)(Type 2)))
+(funcdecl    17  cmp  1 (functype  (Type 2)(Type 0)(Type 0)))
+(funcdecl    18  len  1 (functype  (Type 2)(Type 0)))
+(funcdecl    19  list  1 (functype  (Type 4)(Type 0)))
+(funcdecl    20  open  1 (functype  (Type 8)(Type 3)(Type 3)))
+(funcdecl    21  ord  1 (functype  (Type 2)(Type 3)))
+(funcdecl    22  xrange  1 (functype  (Type 9)(Type 2)(Type 2)))
+(methoddecl    23  __init__  10 (functype  (Type 0)(Type 10)))
+(classdecl   24  Hola  0 10 ( index_list  25  26 )
+(instancedecl    25  c  24 (Type 2))
+(methoddecl    26  ff  24 (functype  (Type 0)(Type 0)))
+(paramdecl    27  sdsd  26 0 (Type 0))
+(localdecl    28  y  23 (Type 2))
+(localdecl    29  x  23 (Type 3))
+(localdecl    30  z  23 (Type 0))

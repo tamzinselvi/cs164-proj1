@@ -1,0 +1,50 @@
+;;; -*-Lisp-*-
+
+; A bare-bones standard prelude for project 2.
+
+;; __builtin__ should not appear in the symbol table.  For our Python
+;; subset, it is not directly accessible.
+(moduledecl 1 __builtin__)
+
+;; The following declarations (and all those in module __builtin__) 
+;; SHOULD be visible in any program.
+
+;; Predefined classes.  
+
+(classdecl 2 Int 1 0 (index_list))
+(classdecl 3 String 1 0 (index_list))
+(classdecl 4 List 1 0 (index_list))
+(classdecl 5 Tuple 1 0 (index_list))
+(classdecl 6 Dict 1 0 (index_list))
+(classdecl 7 Bool 1 0 (index_list))
+(classdecl 8 File 1 0 (index_list))
+(classdecl 9 Xrange 1 0 (index_list))
+
+;; User types inherit from object.  
+(classdecl 10 object 1 0 (index_list 23))
+
+;; (Looking ahead to Python 3), the variables None, True, and False are not
+;; assignable.
+(constdecl 11 None 1 (type 0))
+(constdecl 12 True 1 (type 7))
+(constdecl 13 False 1 (type 7))
+
+;; Assorted functions
+(funcdecl 14 abs 1 (functype (type 0) (type 0)))
+(funcdecl 15 bool 1 (functype (type 7) (type 0)))
+(funcdecl 16 chr 1 (functype (type 3) (type 2)))
+(funcdecl 17 cmp 1 (functype (type 2) (type 0) (type 0)))
+(funcdecl 18 len 1 (functype (type 2) (type 0)))
+(funcdecl 19 list 1 (functype (type 4) (type 0)))
+
+;; Since we don't have optional parameters, we'll use open with two 
+;; parameters.
+(funcdecl 20 open 1 (functype (type 8) (type 3) (type 3)))
+
+(funcdecl 21 ord 1 (functype (type 2) (type 3)))
+
+;; Two-argument version only
+(funcdecl 22 xrange 1 (functype (type 9) (type 2) (type 2)))
+
+;; __init__ procedure for object
+(methoddecl 23 __init__ 10 (functype (type 0) (type 10)))

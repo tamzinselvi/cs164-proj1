@@ -1,0 +1,5466 @@
+Estado 44 conflictos: 4 reducción(ones)/reducción(ones)
+Estado 45 conflictos: 4 reducción(ones)/reducción(ones)
+Estado 46 conflictos: 4 reducción(ones)/reducción(ones)
+Estado 58 conflictos: 4 reducción(ones)/reducción(ones)
+
+
+Gramática
+
+    0 $accept: program $end
+
+    1 program: NEWLINE program
+
+    2 $@1: /* vacío */
+
+    3 program: $@1 stmts
+    4        | /* vacío */
+
+    5 stmts: stmt
+    6      | stmts stmt
+
+    7 stmt: simple_stmts NEWLINE
+    8     | simple_stmts ';' NEWLINE
+    9     | compound_stmt
+   10     | error NEWLINE
+
+   11 simple_stmts: simple_stmt
+   12             | simple_stmts ';' simple_stmt
+
+   13 simple_stmt: expr
+   14            | "pass"
+   15            | "break"
+   16            | "continue"
+   17            | "return" expr_or_tuple
+   18            | "return"
+   19            | "raise" expr0
+   20            | "import" ids
+   21            | "from" id "import" id_list
+   22            | "global" ids
+   23            | assignment
+   24            | target augmented_assign_op expr_or_tuple
+   25            | "print" print_target ',' expr_list_comma
+   26            | "print" expr_list_comma
+   27            | "print" print_target ',' expr_list
+   28            | "print" print_target
+   29            | "print" expr_list
+   30            | "print"
+
+   31 print_target: ">>" expr
+
+   32 augmented_assign_op: "+="
+   33                    | "-="
+   34                    | "*="
+   35                    | "/="
+   36                    | "//="
+   37                    | "%="
+   38                    | "**="
+   39                    | "<<="
+   40                    | ">>="
+   41                    | "|="
+   42                    | "&="
+   43                    | "^="
+
+   44 stmt_block: simple_stmts NEWLINE
+   45           | simple_stmts ';' NEWLINE
+   46           | NEWLINE INDENT stmts DEDENT
+
+   47 suite: stmt_block
+
+   48 block: stmt_block
+
+   49 expr: "lambda" id_list0 ':' expr
+   50     | or_test "if" or_test "else" expr
+   51     | or_test
+
+   52 or_test: comparisons
+   53        | or_test "or" or_test
+   54        | or_test "and" or_test
+   55        | "not" or_test
+
+   56 comparisons: term
+   57            | comparisons "not" "in" term
+   58            | comparisons "in" term
+   59            | comparisons "is" term
+   60            | comparisons "is" "not" term
+   61            | comparisons '<' term
+   62            | comparisons '>' term
+   63            | comparisons "<=" term
+   64            | comparisons ">=" term
+   65            | comparisons "==" term
+   66            | comparisons "!=" term
+
+   67 term: primary
+   68     | term '|' term
+   69     | term '^' term
+   70     | term '&' term
+   71     | term "<<" term
+   72     | term ">>" term
+   73     | term '+' term
+   74     | term '-' term
+   75     | term '*' term
+   76     | term '/' term
+   77     | term '%' term
+   78     | term "//" term
+   79     | '-' term
+   80     | '+' term
+   81     | '~' term
+   82     | term "**" term
+
+   83 expr0: /* vacío */
+   84      | expr
+
+   85 exprs: expr
+   86      | exprs ',' expr
+
+   87 expr_list: exprs
+
+   88 exprs0: /* vacío */
+   89       | exprs opt_comma
+
+   90 expr_list_comma: exprs ','
+
+   91 expr_list_opt_comma: exprs opt_comma
+
+   92 expr_or_tuple: expr
+   93              | tuple
+
+   94 tuple: expr ','
+   95      | expr ',' exprs opt_comma
+
+   96 primary: primary '(' expr_list_opt_comma ')'
+   97        | primary '(' ')'
+   98        | '(' ')'
+   99        | '(' tuple ')'
+  100        | '{' pairs0 '}'
+  101        | '[' exprs0 ']'
+  102        | '(' expr ')'
+  103        | attributeref
+  104        | subscription
+  105        | slicing
+  106        | id
+  107        | INT
+  108        | FLOAT
+  109        | strings
+
+  110 strings: STRING
+  111        | strings STRING
+
+  112 attributeref: primary '.' id
+
+  113 subscription: primary '[' expr ']'
+
+  114 slicing: primary '[' expr0 ':' expr0 ']'
+
+  115 lhs: target
+  116    | target_list
+
+  117 target_list: targets
+
+  118 targets: target ','
+  119        | target ',' target
+  120        | target ',' targets
+
+  121 target: id
+  122       | id "::" id
+  123       | '(' lhs ')'
+  124       | '[' target ']'
+  125       | '[' target_list ']'
+  126       | attributeref
+  127       | subscription
+  128       | slicing
+
+  129 pairs: pair
+  130      | pairs ',' pair
+
+  131 pairs0: /* vacío */
+  132       | pairs opt_comma
+
+  133 pair: expr ':' expr
+
+  134 assignment: lhs '=' expr_or_tuple
+  135           | lhs '=' assignment
+
+  136 compound_stmt: if_stmt
+  137              | while_stmt
+  138              | for_stmt
+  139              | try_stmt
+  140              | def_stmt
+  141              | class_stmt
+
+  142 if_stmt: "if" expr ':' if_context suite if_tail
+
+  143 if_tail: else_part
+  144        | "elif" expr ':' suite if_tail
+
+  145 else_part: /* vacío */
+  146          | "else" ':' suite
+
+  147 if_context: /* vacío */
+
+  148 while_stmt: "while" expr ':' loop_context suite else_part
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple ':' loop_context suite else_part
+
+  150 loop_context: /* vacío */
+
+  151 try_stmt: "try" ':' try_context suite except_clauses
+
+  152 try_context: /* vacío */
+
+  153 except_clauses: "except" ':' suite
+  154               | "except" expr target_opt ':' suite
+  155               | except_clauses "except" ':' suite
+  156               | except_clauses "except" expr target_opt ':' suite
+
+  157 target_opt: ',' id
+  158           | /* vacío */
+
+  159 $@2: /* vacío */
+
+  160 def_stmt: "def" id '(' id_list0 ')' ':' $@2 block
+
+  161 id: ID
+
+  162 ids: id
+  163    | ids ',' id
+
+  164 id_list: ids
+
+  165 id_list0: /* vacío */
+  166         | ids opt_comma
+
+  167 $@3: /* vacío */
+
+  168 class_stmt: "class" id '(' id ')' ':' $@3 block
+
+  169 opt_comma: /* vacío */
+  170          | ','
+
+
+Terminales con las reglas donde aparecen
+
+$end (0) 0
+'%' (37) 77
+'&' (38) 70
+'(' (40) 96 97 98 99 102 123 160 168
+')' (41) 96 97 98 99 102 123 160 168
+'*' (42) 75
+'+' (43) 73 80
+',' (44) 25 27 86 90 94 95 118 119 120 130 157 163 170
+'-' (45) 74 79
+'.' (46) 112
+'/' (47) 76
+':' (58) 49 114 133 142 144 146 148 149 151 153 154 155 156 160 168
+';' (59) 8 12 45
+'<' (60) 61
+'=' (61) 134 135
+'>' (62) 62
+'[' (91) 101 113 114 124 125
+']' (93) 101 113 114 124 125
+'^' (94) 69
+'{' (123) 100
+'|' (124) 68
+'}' (125) 100
+'~' (126) 81
+error (256) 10
+FLOAT (258) 108
+ID (259) 161
+INT (260) 107
+STRING (261) 110 111
+"!=" (262) 66
+"%=" (263) 37
+"&=" (264) 42
+"**" (265) 82
+"**=" (266) 38
+"*=" (267) 34
+"+=" (268) 32
+"-=" (269) 33
+"//" (270) 78
+"<<" (271) 71
+">>" (272) 31 72
+"<<=" (273) 39
+"<=" (274) 63
+"==" (275) 65
+">=" (276) 64
+">>=" (277) 40
+"^=" (278) 43
+"|=" (279) 41
+"/=" (280) 35
+"//=" (281) 36
+"::" (282) 122
+"and" (283) 54
+"break" (284) 15
+"class" (285) 168
+"continue" (286) 16
+"def" (287) 160
+"elif" (288) 144
+"else" (289) 50 146
+"except" (290) 153 154 155 156
+"for" (291) 149
+"from" (292) 21
+"global" (293) 22
+"if" (294) 50 142
+"import" (295) 20 21
+"in" (296) 57 58 149
+"is" (297) 59 60
+"lambda" (298) 49
+"not" (299) 55 57 60
+"or" (300) 53
+"pass" (301) 14
+"print" (302) 25 26 27 28 29 30
+"raise" (303) 19
+"return" (304) 17 18
+"try" (305) 151
+"while" (306) 148
+DEDENT (307) 46
+INDENT (308) 46
+NEWLINE (309) 1 7 8 10 44 45 46
+UNARY_NOT (310)
+
+
+No terminales con las reglas donde aparecen
+
+$accept (78)
+    en la izquierda: 0
+program (79)
+    en la izquierda: 1 3 4, en la derecha: 0 1
+$@1 (80)
+    en la izquierda: 2, en la derecha: 3
+stmts (81)
+    en la izquierda: 5 6, en la derecha: 3 6 46
+stmt (82)
+    en la izquierda: 7 8 9 10, en la derecha: 5 6
+simple_stmts (83)
+    en la izquierda: 11 12, en la derecha: 7 8 12 44 45
+simple_stmt (84)
+    en la izquierda: 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+    29 30, en la derecha: 11 12
+print_target (85)
+    en la izquierda: 31, en la derecha: 25 27 28
+augmented_assign_op (86)
+    en la izquierda: 32 33 34 35 36 37 38 39 40 41 42 43, en la derecha:
+    24
+stmt_block (87)
+    en la izquierda: 44 45 46, en la derecha: 47 48
+suite (88)
+    en la izquierda: 47, en la derecha: 142 144 146 148 149 151 153
+    154 155 156
+block (89)
+    en la izquierda: 48, en la derecha: 160 168
+expr (90)
+    en la izquierda: 49 50 51, en la derecha: 13 31 49 50 84 85 86
+    92 94 95 102 113 133 142 144 148 154 156
+or_test (91)
+    en la izquierda: 52 53 54 55, en la derecha: 50 51 53 54 55
+comparisons (92)
+    en la izquierda: 56 57 58 59 60 61 62 63 64 65 66, en la derecha:
+    52 57 58 59 60 61 62 63 64 65 66
+term (93)
+    en la izquierda: 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82,
+    en la derecha: 56 57 58 59 60 61 62 63 64 65 66 68 69 70 71 72
+    73 74 75 76 77 78 79 80 81 82
+expr0 (94)
+    en la izquierda: 83 84, en la derecha: 19 114
+exprs (95)
+    en la izquierda: 85 86, en la derecha: 86 87 89 90 91 95
+expr_list (96)
+    en la izquierda: 87, en la derecha: 27 29
+exprs0 (97)
+    en la izquierda: 88 89, en la derecha: 101
+expr_list_comma (98)
+    en la izquierda: 90, en la derecha: 25 26
+expr_list_opt_comma (99)
+    en la izquierda: 91, en la derecha: 96
+expr_or_tuple (100)
+    en la izquierda: 92 93, en la derecha: 17 24 134 149
+tuple (101)
+    en la izquierda: 94 95, en la derecha: 93 99
+primary (102)
+    en la izquierda: 96 97 98 99 100 101 102 103 104 105 106 107 108
+    109, en la derecha: 67 96 97 112 113 114
+strings (103)
+    en la izquierda: 110 111, en la derecha: 109 111
+attributeref (104)
+    en la izquierda: 112, en la derecha: 103 126
+subscription (105)
+    en la izquierda: 113, en la derecha: 104 127
+slicing (106)
+    en la izquierda: 114, en la derecha: 105 128
+lhs (107)
+    en la izquierda: 115 116, en la derecha: 123 134 135 149
+target_list (108)
+    en la izquierda: 117, en la derecha: 116 125
+targets (109)
+    en la izquierda: 118 119 120, en la derecha: 117 120
+target (110)
+    en la izquierda: 121 122 123 124 125 126 127 128, en la derecha:
+    24 115 118 119 120 124
+pairs (111)
+    en la izquierda: 129 130, en la derecha: 130 132
+pairs0 (112)
+    en la izquierda: 131 132, en la derecha: 100
+pair (113)
+    en la izquierda: 133, en la derecha: 129 130
+assignment (114)
+    en la izquierda: 134 135, en la derecha: 23 135
+compound_stmt (115)
+    en la izquierda: 136 137 138 139 140 141, en la derecha: 9
+if_stmt (116)
+    en la izquierda: 142, en la derecha: 136
+if_tail (117)
+    en la izquierda: 143 144, en la derecha: 142 144
+else_part (118)
+    en la izquierda: 145 146, en la derecha: 143 148 149
+if_context (119)
+    en la izquierda: 147, en la derecha: 142
+while_stmt (120)
+    en la izquierda: 148, en la derecha: 137
+for_stmt (121)
+    en la izquierda: 149, en la derecha: 138
+loop_context (122)
+    en la izquierda: 150, en la derecha: 148 149
+try_stmt (123)
+    en la izquierda: 151, en la derecha: 139
+try_context (124)
+    en la izquierda: 152, en la derecha: 151
+except_clauses (125)
+    en la izquierda: 153 154 155 156, en la derecha: 151 155 156
+target_opt (126)
+    en la izquierda: 157 158, en la derecha: 154 156
+def_stmt (127)
+    en la izquierda: 160, en la derecha: 140
+$@2 (128)
+    en la izquierda: 159, en la derecha: 160
+id (129)
+    en la izquierda: 161, en la derecha: 21 106 112 121 122 157 160
+    162 163 168
+ids (130)
+    en la izquierda: 162 163, en la derecha: 20 22 163 164 166
+id_list (131)
+    en la izquierda: 164, en la derecha: 21
+id_list0 (132)
+    en la izquierda: 165 166, en la derecha: 49 160
+class_stmt (133)
+    en la izquierda: 168, en la derecha: 141
+$@3 (134)
+    en la izquierda: 167, en la derecha: 168
+opt_comma (135)
+    en la izquierda: 169 170, en la derecha: 89 91 95 132 166
+
+
+estado 0
+
+    0 $accept: . program $end
+
+    NEWLINE  desplazar e ir al estado 1
+
+    $end      reduce usando la regla 4 (program)
+    $default  reduce usando la regla 2 ($@1)
+
+    program  ir al estado 2
+    $@1      ir al estado 3
+
+
+estado 1
+
+    1 program: NEWLINE . program
+
+    NEWLINE  desplazar e ir al estado 1
+
+    $end      reduce usando la regla 4 (program)
+    $default  reduce usando la regla 2 ($@1)
+
+    program  ir al estado 4
+    $@1      ir al estado 3
+
+
+estado 2
+
+    0 $accept: program . $end
+
+    $end  desplazar e ir al estado 5
+
+
+estado 3
+
+    3 program: $@1 . stmts
+
+    error       desplazar e ir al estado 6
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "class"     desplazar e ir al estado 12
+    "continue"  desplazar e ir al estado 13
+    "def"       desplazar e ir al estado 14
+    "for"       desplazar e ir al estado 15
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "if"        desplazar e ir al estado 18
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    "try"       desplazar e ir al estado 26
+    "while"     desplazar e ir al estado 27
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    stmts          ir al estado 34
+    stmt           ir al estado 35
+    simple_stmts   ir al estado 36
+    simple_stmt    ir al estado 37
+    expr           ir al estado 38
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 44
+    subscription   ir al estado 45
+    slicing        ir al estado 46
+    lhs            ir al estado 47
+    target_list    ir al estado 48
+    targets        ir al estado 49
+    target         ir al estado 50
+    assignment     ir al estado 51
+    compound_stmt  ir al estado 52
+    if_stmt        ir al estado 53
+    while_stmt     ir al estado 54
+    for_stmt       ir al estado 55
+    try_stmt       ir al estado 56
+    def_stmt       ir al estado 57
+    id             ir al estado 58
+    class_stmt     ir al estado 59
+
+
+estado 4
+
+    1 program: NEWLINE program .
+
+    $default  reduce usando la regla 1 (program)
+
+
+estado 5
+
+    0 $accept: program $end .
+
+    $default  aceptar
+
+
+estado 6
+
+   10 stmt: error . NEWLINE
+
+    NEWLINE  desplazar e ir al estado 60
+
+
+estado 7
+
+  108 primary: FLOAT .
+
+    $default  reduce usando la regla 108 (primary)
+
+
+estado 8
+
+  161 id: ID .
+
+    $default  reduce usando la regla 161 (id)
+
+
+estado 9
+
+  107 primary: INT .
+
+    $default  reduce usando la regla 107 (primary)
+
+
+estado 10
+
+  110 strings: STRING .
+
+    $default  reduce usando la regla 110 (strings)
+
+
+estado 11
+
+   15 simple_stmt: "break" .
+
+    $default  reduce usando la regla 15 (simple_stmt)
+
+
+estado 12
+
+  168 class_stmt: "class" . id '(' id ')' ':' $@3 block
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 61
+
+
+estado 13
+
+   16 simple_stmt: "continue" .
+
+    $default  reduce usando la regla 16 (simple_stmt)
+
+
+estado 14
+
+  160 def_stmt: "def" . id '(' id_list0 ')' ':' $@2 block
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 62
+
+
+estado 15
+
+  149 for_stmt: "for" . lhs "in" expr_or_tuple ':' loop_context suite else_part
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '('     desplazar e ir al estado 31
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 33
+
+    primary       ir al estado 63
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 64
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 65
+    id            ir al estado 58
+
+
+estado 16
+
+   21 simple_stmt: "from" . id "import" id_list
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 66
+
+
+estado 17
+
+   22 simple_stmt: "global" . ids
+
+    ID  desplazar e ir al estado 8
+
+    id   ir al estado 67
+    ids  ir al estado 68
+
+
+estado 18
+
+  142 if_stmt: "if" . expr ':' if_context suite if_tail
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 71
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 19
+
+   20 simple_stmt: "import" . ids
+
+    ID  desplazar e ir al estado 8
+
+    id   ir al estado 67
+    ids  ir al estado 76
+
+
+estado 20
+
+   49 expr: "lambda" . id_list0 ':' expr
+
+    ID  desplazar e ir al estado 8
+
+    $default  reduce usando la regla 165 (id_list0)
+
+    id        ir al estado 67
+    ids       ir al estado 77
+    id_list0  ir al estado 78
+
+
+estado 21
+
+   55 or_test: "not" . or_test
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    "not"   desplazar e ir al estado 21
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    or_test       ir al estado 79
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 22
+
+   14 simple_stmt: "pass" .
+
+    $default  reduce usando la regla 14 (simple_stmt)
+
+
+estado 23
+
+   25 simple_stmt: "print" . print_target ',' expr_list_comma
+   26            | "print" . expr_list_comma
+   27            | "print" . print_target ',' expr_list
+   28            | "print" . print_target
+   29            | "print" . expr_list
+   30            | "print" .
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    ">>"      desplazar e ir al estado 80
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 30 (simple_stmt)
+
+    print_target     ir al estado 81
+    expr             ir al estado 82
+    or_test          ir al estado 39
+    comparisons      ir al estado 40
+    term             ir al estado 41
+    exprs            ir al estado 83
+    expr_list        ir al estado 84
+    expr_list_comma  ir al estado 85
+    primary          ir al estado 42
+    strings          ir al estado 43
+    attributeref     ir al estado 72
+    subscription     ir al estado 73
+    slicing          ir al estado 74
+    id               ir al estado 75
+
+
+estado 24
+
+   19 simple_stmt: "raise" . expr0
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 83 (expr0)
+
+    expr          ir al estado 86
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    expr0         ir al estado 87
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 25
+
+   17 simple_stmt: "return" . expr_or_tuple
+   18            | "return" .
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 18 (simple_stmt)
+
+    expr           ir al estado 88
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    expr_or_tuple  ir al estado 89
+    tuple          ir al estado 90
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 72
+    subscription   ir al estado 73
+    slicing        ir al estado 74
+    id             ir al estado 75
+
+
+estado 26
+
+  151 try_stmt: "try" . ':' try_context suite except_clauses
+
+    ':'  desplazar e ir al estado 91
+
+
+estado 27
+
+  148 while_stmt: "while" . expr ':' loop_context suite else_part
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 92
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 28
+
+   80 term: '+' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 93
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 29
+
+   79 term: '-' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 94
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 30
+
+   81 term: '~' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 95
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 31
+
+   98 primary: '(' . ')'
+   99        | '(' . tuple ')'
+  102        | '(' . expr ')'
+  123 target: '(' . lhs ')'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 31
+    ')'       desplazar e ir al estado 96
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 33
+
+    expr          ir al estado 97
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    tuple         ir al estado 98
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 99
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 65
+    id            ir al estado 58
+
+
+estado 32
+
+  100 primary: '{' . pairs0 '}'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 131 (pairs0)
+
+    expr          ir al estado 100
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    pairs         ir al estado 101
+    pairs0        ir al estado 102
+    pair          ir al estado 103
+    id            ir al estado 75
+
+
+estado 33
+
+  101 primary: '[' . exprs0 ']'
+  124 target: '[' . target ']'
+  125       | '[' . target_list ']'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 31
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 33
+
+    $default  reduce usando la regla 88 (exprs0)
+
+    expr          ir al estado 82
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    exprs         ir al estado 104
+    exprs0        ir al estado 105
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    target_list   ir al estado 106
+    targets       ir al estado 49
+    target        ir al estado 107
+    id            ir al estado 58
+
+
+estado 34
+
+    3 program: $@1 stmts .
+    6 stmts: stmts . stmt
+
+    error       desplazar e ir al estado 6
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "class"     desplazar e ir al estado 12
+    "continue"  desplazar e ir al estado 13
+    "def"       desplazar e ir al estado 14
+    "for"       desplazar e ir al estado 15
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "if"        desplazar e ir al estado 18
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    "try"       desplazar e ir al estado 26
+    "while"     desplazar e ir al estado 27
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    $end  reduce usando la regla 3 (program)
+
+    stmt           ir al estado 108
+    simple_stmts   ir al estado 36
+    simple_stmt    ir al estado 37
+    expr           ir al estado 38
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 44
+    subscription   ir al estado 45
+    slicing        ir al estado 46
+    lhs            ir al estado 47
+    target_list    ir al estado 48
+    targets        ir al estado 49
+    target         ir al estado 50
+    assignment     ir al estado 51
+    compound_stmt  ir al estado 52
+    if_stmt        ir al estado 53
+    while_stmt     ir al estado 54
+    for_stmt       ir al estado 55
+    try_stmt       ir al estado 56
+    def_stmt       ir al estado 57
+    id             ir al estado 58
+    class_stmt     ir al estado 59
+
+
+estado 35
+
+    5 stmts: stmt .
+
+    $default  reduce usando la regla 5 (stmts)
+
+
+estado 36
+
+    7 stmt: simple_stmts . NEWLINE
+    8     | simple_stmts . ';' NEWLINE
+   12 simple_stmts: simple_stmts . ';' simple_stmt
+
+    NEWLINE  desplazar e ir al estado 109
+    ';'      desplazar e ir al estado 110
+
+
+estado 37
+
+   11 simple_stmts: simple_stmt .
+
+    $default  reduce usando la regla 11 (simple_stmts)
+
+
+estado 38
+
+   13 simple_stmt: expr .
+
+    $default  reduce usando la regla 13 (simple_stmt)
+
+
+estado 39
+
+   50 expr: or_test . "if" or_test "else" expr
+   51     | or_test .
+   53 or_test: or_test . "or" or_test
+   54        | or_test . "and" or_test
+
+    "and"  desplazar e ir al estado 111
+    "if"   desplazar e ir al estado 112
+    "or"   desplazar e ir al estado 113
+
+    $default  reduce usando la regla 51 (expr)
+
+
+estado 40
+
+   52 or_test: comparisons .
+   57 comparisons: comparisons . "not" "in" term
+   58            | comparisons . "in" term
+   59            | comparisons . "is" term
+   60            | comparisons . "is" "not" term
+   61            | comparisons . '<' term
+   62            | comparisons . '>' term
+   63            | comparisons . "<=" term
+   64            | comparisons . ">=" term
+   65            | comparisons . "==" term
+   66            | comparisons . "!=" term
+
+    '<'    desplazar e ir al estado 114
+    '>'    desplazar e ir al estado 115
+    "!="   desplazar e ir al estado 116
+    "<="   desplazar e ir al estado 117
+    "=="   desplazar e ir al estado 118
+    ">="   desplazar e ir al estado 119
+    "in"   desplazar e ir al estado 120
+    "is"   desplazar e ir al estado 121
+    "not"  desplazar e ir al estado 122
+
+    $default  reduce usando la regla 52 (or_test)
+
+
+estado 41
+
+   56 comparisons: term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 56 (comparisons)
+
+
+estado 42
+
+   67 term: primary .
+   96 primary: primary . '(' expr_list_opt_comma ')'
+   97        | primary . '(' ')'
+  112 attributeref: primary . '.' id
+  113 subscription: primary . '[' expr ']'
+  114 slicing: primary . '[' expr0 ':' expr0 ']'
+
+    '.'  desplazar e ir al estado 135
+    '('  desplazar e ir al estado 136
+    '['  desplazar e ir al estado 137
+
+    $default  reduce usando la regla 67 (term)
+
+
+estado 43
+
+  109 primary: strings .
+  111 strings: strings . STRING
+
+    STRING  desplazar e ir al estado 138
+
+    $default  reduce usando la regla 109 (primary)
+
+
+estado 44
+
+  103 primary: attributeref .
+  126 target: attributeref .
+
+    "%="      reduce usando la regla 126 (target)
+    "&="      reduce usando la regla 126 (target)
+    "**="     reduce usando la regla 126 (target)
+    "*="      reduce usando la regla 126 (target)
+    "+="      reduce usando la regla 126 (target)
+    "-="      reduce usando la regla 126 (target)
+    "<<="     reduce usando la regla 126 (target)
+    ">>="     reduce usando la regla 126 (target)
+    "^="      reduce usando la regla 126 (target)
+    "|="      reduce usando la regla 126 (target)
+    "/="      reduce usando la regla 126 (target)
+    "//="     reduce usando la regla 126 (target)
+    "in"      reduce usando la regla 103 (primary)
+    "in"      [reduce usando la regla 126 (target)]
+    ','       reduce usando la regla 103 (primary)
+    ','       [reduce usando la regla 126 (target)]
+    ')'       reduce usando la regla 103 (primary)
+    ')'       [reduce usando la regla 126 (target)]
+    ']'       reduce usando la regla 103 (primary)
+    ']'       [reduce usando la regla 126 (target)]
+    '='       reduce usando la regla 126 (target)
+    $default  reduce usando la regla 103 (primary)
+
+
+estado 45
+
+  104 primary: subscription .
+  127 target: subscription .
+
+    "%="      reduce usando la regla 127 (target)
+    "&="      reduce usando la regla 127 (target)
+    "**="     reduce usando la regla 127 (target)
+    "*="      reduce usando la regla 127 (target)
+    "+="      reduce usando la regla 127 (target)
+    "-="      reduce usando la regla 127 (target)
+    "<<="     reduce usando la regla 127 (target)
+    ">>="     reduce usando la regla 127 (target)
+    "^="      reduce usando la regla 127 (target)
+    "|="      reduce usando la regla 127 (target)
+    "/="      reduce usando la regla 127 (target)
+    "//="     reduce usando la regla 127 (target)
+    "in"      reduce usando la regla 104 (primary)
+    "in"      [reduce usando la regla 127 (target)]
+    ','       reduce usando la regla 104 (primary)
+    ','       [reduce usando la regla 127 (target)]
+    ')'       reduce usando la regla 104 (primary)
+    ')'       [reduce usando la regla 127 (target)]
+    ']'       reduce usando la regla 104 (primary)
+    ']'       [reduce usando la regla 127 (target)]
+    '='       reduce usando la regla 127 (target)
+    $default  reduce usando la regla 104 (primary)
+
+
+estado 46
+
+  105 primary: slicing .
+  128 target: slicing .
+
+    "%="      reduce usando la regla 128 (target)
+    "&="      reduce usando la regla 128 (target)
+    "**="     reduce usando la regla 128 (target)
+    "*="      reduce usando la regla 128 (target)
+    "+="      reduce usando la regla 128 (target)
+    "-="      reduce usando la regla 128 (target)
+    "<<="     reduce usando la regla 128 (target)
+    ">>="     reduce usando la regla 128 (target)
+    "^="      reduce usando la regla 128 (target)
+    "|="      reduce usando la regla 128 (target)
+    "/="      reduce usando la regla 128 (target)
+    "//="     reduce usando la regla 128 (target)
+    "in"      reduce usando la regla 105 (primary)
+    "in"      [reduce usando la regla 128 (target)]
+    ','       reduce usando la regla 105 (primary)
+    ','       [reduce usando la regla 128 (target)]
+    ')'       reduce usando la regla 105 (primary)
+    ')'       [reduce usando la regla 128 (target)]
+    ']'       reduce usando la regla 105 (primary)
+    ']'       [reduce usando la regla 128 (target)]
+    '='       reduce usando la regla 128 (target)
+    $default  reduce usando la regla 105 (primary)
+
+
+estado 47
+
+  134 assignment: lhs . '=' expr_or_tuple
+  135           | lhs . '=' assignment
+
+    '='  desplazar e ir al estado 139
+
+
+estado 48
+
+  116 lhs: target_list .
+
+    $default  reduce usando la regla 116 (lhs)
+
+
+estado 49
+
+  117 target_list: targets .
+
+    $default  reduce usando la regla 117 (target_list)
+
+
+estado 50
+
+   24 simple_stmt: target . augmented_assign_op expr_or_tuple
+  115 lhs: target .
+  118 targets: target . ','
+  119        | target . ',' target
+  120        | target . ',' targets
+
+    "%="   desplazar e ir al estado 140
+    "&="   desplazar e ir al estado 141
+    "**="  desplazar e ir al estado 142
+    "*="   desplazar e ir al estado 143
+    "+="   desplazar e ir al estado 144
+    "-="   desplazar e ir al estado 145
+    "<<="  desplazar e ir al estado 146
+    ">>="  desplazar e ir al estado 147
+    "^="   desplazar e ir al estado 148
+    "|="   desplazar e ir al estado 149
+    "/="   desplazar e ir al estado 150
+    "//="  desplazar e ir al estado 151
+    ','    desplazar e ir al estado 152
+
+    $default  reduce usando la regla 115 (lhs)
+
+    augmented_assign_op  ir al estado 153
+
+
+estado 51
+
+   23 simple_stmt: assignment .
+
+    $default  reduce usando la regla 23 (simple_stmt)
+
+
+estado 52
+
+    9 stmt: compound_stmt .
+
+    $default  reduce usando la regla 9 (stmt)
+
+
+estado 53
+
+  136 compound_stmt: if_stmt .
+
+    $default  reduce usando la regla 136 (compound_stmt)
+
+
+estado 54
+
+  137 compound_stmt: while_stmt .
+
+    $default  reduce usando la regla 137 (compound_stmt)
+
+
+estado 55
+
+  138 compound_stmt: for_stmt .
+
+    $default  reduce usando la regla 138 (compound_stmt)
+
+
+estado 56
+
+  139 compound_stmt: try_stmt .
+
+    $default  reduce usando la regla 139 (compound_stmt)
+
+
+estado 57
+
+  140 compound_stmt: def_stmt .
+
+    $default  reduce usando la regla 140 (compound_stmt)
+
+
+estado 58
+
+  106 primary: id .
+  121 target: id .
+  122       | id . "::" id
+
+    "::"  desplazar e ir al estado 154
+
+    "%="      reduce usando la regla 121 (target)
+    "&="      reduce usando la regla 121 (target)
+    "**="     reduce usando la regla 121 (target)
+    "*="      reduce usando la regla 121 (target)
+    "+="      reduce usando la regla 121 (target)
+    "-="      reduce usando la regla 121 (target)
+    "<<="     reduce usando la regla 121 (target)
+    ">>="     reduce usando la regla 121 (target)
+    "^="      reduce usando la regla 121 (target)
+    "|="      reduce usando la regla 121 (target)
+    "/="      reduce usando la regla 121 (target)
+    "//="     reduce usando la regla 121 (target)
+    "in"      reduce usando la regla 106 (primary)
+    "in"      [reduce usando la regla 121 (target)]
+    ','       reduce usando la regla 106 (primary)
+    ','       [reduce usando la regla 121 (target)]
+    ')'       reduce usando la regla 106 (primary)
+    ')'       [reduce usando la regla 121 (target)]
+    ']'       reduce usando la regla 106 (primary)
+    ']'       [reduce usando la regla 121 (target)]
+    '='       reduce usando la regla 121 (target)
+    $default  reduce usando la regla 106 (primary)
+
+
+estado 59
+
+  141 compound_stmt: class_stmt .
+
+    $default  reduce usando la regla 141 (compound_stmt)
+
+
+estado 60
+
+   10 stmt: error NEWLINE .
+
+    $default  reduce usando la regla 10 (stmt)
+
+
+estado 61
+
+  168 class_stmt: "class" id . '(' id ')' ':' $@3 block
+
+    '('  desplazar e ir al estado 155
+
+
+estado 62
+
+  160 def_stmt: "def" id . '(' id_list0 ')' ':' $@2 block
+
+    '('  desplazar e ir al estado 156
+
+
+estado 63
+
+   96 primary: primary . '(' expr_list_opt_comma ')'
+   97        | primary . '(' ')'
+  112 attributeref: primary . '.' id
+  113 subscription: primary . '[' expr ']'
+  114 slicing: primary . '[' expr0 ':' expr0 ']'
+
+    '.'  desplazar e ir al estado 135
+    '('  desplazar e ir al estado 136
+    '['  desplazar e ir al estado 137
+
+
+estado 64
+
+  149 for_stmt: "for" lhs . "in" expr_or_tuple ':' loop_context suite else_part
+
+    "in"  desplazar e ir al estado 157
+
+
+estado 65
+
+  115 lhs: target .
+  118 targets: target . ','
+  119        | target . ',' target
+  120        | target . ',' targets
+
+    ','  desplazar e ir al estado 152
+
+    $default  reduce usando la regla 115 (lhs)
+
+
+estado 66
+
+   21 simple_stmt: "from" id . "import" id_list
+
+    "import"  desplazar e ir al estado 158
+
+
+estado 67
+
+  162 ids: id .
+
+    $default  reduce usando la regla 162 (ids)
+
+
+estado 68
+
+   22 simple_stmt: "global" ids .
+  163 ids: ids . ',' id
+
+    ','  desplazar e ir al estado 159
+
+    $default  reduce usando la regla 22 (simple_stmt)
+
+
+estado 69
+
+   98 primary: '(' . ')'
+   99        | '(' . tuple ')'
+  102        | '(' . expr ')'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    ')'       desplazar e ir al estado 96
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 97
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    tuple         ir al estado 98
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 70
+
+  101 primary: '[' . exprs0 ']'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 88 (exprs0)
+
+    expr          ir al estado 82
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    exprs         ir al estado 104
+    exprs0        ir al estado 105
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 71
+
+  142 if_stmt: "if" expr . ':' if_context suite if_tail
+
+    ':'  desplazar e ir al estado 160
+
+
+estado 72
+
+  103 primary: attributeref .
+
+    $default  reduce usando la regla 103 (primary)
+
+
+estado 73
+
+  104 primary: subscription .
+
+    $default  reduce usando la regla 104 (primary)
+
+
+estado 74
+
+  105 primary: slicing .
+
+    $default  reduce usando la regla 105 (primary)
+
+
+estado 75
+
+  106 primary: id .
+
+    $default  reduce usando la regla 106 (primary)
+
+
+estado 76
+
+   20 simple_stmt: "import" ids .
+  163 ids: ids . ',' id
+
+    ','  desplazar e ir al estado 159
+
+    $default  reduce usando la regla 20 (simple_stmt)
+
+
+estado 77
+
+  163 ids: ids . ',' id
+  166 id_list0: ids . opt_comma
+
+    ','  desplazar e ir al estado 161
+
+    $default  reduce usando la regla 169 (opt_comma)
+
+    opt_comma  ir al estado 162
+
+
+estado 78
+
+   49 expr: "lambda" id_list0 . ':' expr
+
+    ':'  desplazar e ir al estado 163
+
+
+estado 79
+
+   53 or_test: or_test . "or" or_test
+   54        | or_test . "and" or_test
+   55        | "not" or_test .
+
+    $default  reduce usando la regla 55 (or_test)
+
+
+estado 80
+
+   31 print_target: ">>" . expr
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 164
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 81
+
+   25 simple_stmt: "print" print_target . ',' expr_list_comma
+   27            | "print" print_target . ',' expr_list
+   28            | "print" print_target .
+
+    ','  desplazar e ir al estado 165
+
+    $default  reduce usando la regla 28 (simple_stmt)
+
+
+estado 82
+
+   85 exprs: expr .
+
+    $default  reduce usando la regla 85 (exprs)
+
+
+estado 83
+
+   86 exprs: exprs . ',' expr
+   87 expr_list: exprs .
+   90 expr_list_comma: exprs . ','
+
+    ','  desplazar e ir al estado 166
+
+    $default  reduce usando la regla 87 (expr_list)
+
+
+estado 84
+
+   29 simple_stmt: "print" expr_list .
+
+    $default  reduce usando la regla 29 (simple_stmt)
+
+
+estado 85
+
+   26 simple_stmt: "print" expr_list_comma .
+
+    $default  reduce usando la regla 26 (simple_stmt)
+
+
+estado 86
+
+   84 expr0: expr .
+
+    $default  reduce usando la regla 84 (expr0)
+
+
+estado 87
+
+   19 simple_stmt: "raise" expr0 .
+
+    $default  reduce usando la regla 19 (simple_stmt)
+
+
+estado 88
+
+   92 expr_or_tuple: expr .
+   94 tuple: expr . ','
+   95      | expr . ',' exprs opt_comma
+
+    ','  desplazar e ir al estado 167
+
+    $default  reduce usando la regla 92 (expr_or_tuple)
+
+
+estado 89
+
+   17 simple_stmt: "return" expr_or_tuple .
+
+    $default  reduce usando la regla 17 (simple_stmt)
+
+
+estado 90
+
+   93 expr_or_tuple: tuple .
+
+    $default  reduce usando la regla 93 (expr_or_tuple)
+
+
+estado 91
+
+  151 try_stmt: "try" ':' . try_context suite except_clauses
+
+    $default  reduce usando la regla 152 (try_context)
+
+    try_context  ir al estado 168
+
+
+estado 92
+
+  148 while_stmt: "while" expr . ':' loop_context suite else_part
+
+    ':'  desplazar e ir al estado 169
+
+
+estado 93
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   80     | '+' term .
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 80 (term)
+
+
+estado 94
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   79     | '-' term .
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 79 (term)
+
+
+estado 95
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   81     | '~' term .
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 81 (term)
+
+
+estado 96
+
+   98 primary: '(' ')' .
+
+    $default  reduce usando la regla 98 (primary)
+
+
+estado 97
+
+   94 tuple: expr . ','
+   95      | expr . ',' exprs opt_comma
+  102 primary: '(' expr . ')'
+
+    ','  desplazar e ir al estado 167
+    ')'  desplazar e ir al estado 170
+
+
+estado 98
+
+   99 primary: '(' tuple . ')'
+
+    ')'  desplazar e ir al estado 171
+
+
+estado 99
+
+  123 target: '(' lhs . ')'
+
+    ')'  desplazar e ir al estado 172
+
+
+estado 100
+
+  133 pair: expr . ':' expr
+
+    ':'  desplazar e ir al estado 173
+
+
+estado 101
+
+  130 pairs: pairs . ',' pair
+  132 pairs0: pairs . opt_comma
+
+    ','  desplazar e ir al estado 174
+
+    $default  reduce usando la regla 169 (opt_comma)
+
+    opt_comma  ir al estado 175
+
+
+estado 102
+
+  100 primary: '{' pairs0 . '}'
+
+    '}'  desplazar e ir al estado 176
+
+
+estado 103
+
+  129 pairs: pair .
+
+    $default  reduce usando la regla 129 (pairs)
+
+
+estado 104
+
+   86 exprs: exprs . ',' expr
+   89 exprs0: exprs . opt_comma
+
+    ','  desplazar e ir al estado 177
+
+    $default  reduce usando la regla 169 (opt_comma)
+
+    opt_comma  ir al estado 178
+
+
+estado 105
+
+  101 primary: '[' exprs0 . ']'
+
+    ']'  desplazar e ir al estado 179
+
+
+estado 106
+
+  125 target: '[' target_list . ']'
+
+    ']'  desplazar e ir al estado 180
+
+
+estado 107
+
+  118 targets: target . ','
+  119        | target . ',' target
+  120        | target . ',' targets
+  124 target: '[' target . ']'
+
+    ','  desplazar e ir al estado 152
+    ']'  desplazar e ir al estado 181
+
+
+estado 108
+
+    6 stmts: stmts stmt .
+
+    $default  reduce usando la regla 6 (stmts)
+
+
+estado 109
+
+    7 stmt: simple_stmts NEWLINE .
+
+    $default  reduce usando la regla 7 (stmt)
+
+
+estado 110
+
+    8 stmt: simple_stmts ';' . NEWLINE
+   12 simple_stmts: simple_stmts ';' . simple_stmt
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 182
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmt   ir al estado 183
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 111
+
+   54 or_test: or_test "and" . or_test
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    "not"   desplazar e ir al estado 21
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    or_test       ir al estado 184
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 112
+
+   50 expr: or_test "if" . or_test "else" expr
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    "not"   desplazar e ir al estado 21
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    or_test       ir al estado 185
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 113
+
+   53 or_test: or_test "or" . or_test
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    "not"   desplazar e ir al estado 21
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    or_test       ir al estado 186
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 114
+
+   61 comparisons: comparisons '<' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 187
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 115
+
+   62 comparisons: comparisons '>' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 188
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 116
+
+   66 comparisons: comparisons "!=" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 189
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 117
+
+   63 comparisons: comparisons "<=" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 190
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 118
+
+   65 comparisons: comparisons "==" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 191
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 119
+
+   64 comparisons: comparisons ">=" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 192
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 120
+
+   58 comparisons: comparisons "in" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 193
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 121
+
+   59 comparisons: comparisons "is" . term
+   60            | comparisons "is" . "not" term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    "not"   desplazar e ir al estado 194
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 195
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 122
+
+   57 comparisons: comparisons "not" . "in" term
+
+    "in"  desplazar e ir al estado 196
+
+
+estado 123
+
+   82 term: term "**" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 197
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 124
+
+   78 term: term "//" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 198
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 125
+
+   71 term: term "<<" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 199
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 126
+
+   72 term: term ">>" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 200
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 127
+
+   68 term: term '|' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 201
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 128
+
+   69 term: term '^' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 202
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 129
+
+   70 term: term '&' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 203
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 130
+
+   73 term: term '+' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 204
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 131
+
+   74 term: term '-' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 205
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 132
+
+   75 term: term '*' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 206
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 133
+
+   76 term: term '/' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 207
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 134
+
+   77 term: term '%' . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 208
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 135
+
+  112 attributeref: primary '.' . id
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 209
+
+
+estado 136
+
+   96 primary: primary '(' . expr_list_opt_comma ')'
+   97        | primary '(' . ')'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    ')'       desplazar e ir al estado 210
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr                 ir al estado 82
+    or_test              ir al estado 39
+    comparisons          ir al estado 40
+    term                 ir al estado 41
+    exprs                ir al estado 211
+    expr_list_opt_comma  ir al estado 212
+    primary              ir al estado 42
+    strings              ir al estado 43
+    attributeref         ir al estado 72
+    subscription         ir al estado 73
+    slicing              ir al estado 74
+    id                   ir al estado 75
+
+
+estado 137
+
+  113 subscription: primary '[' . expr ']'
+  114 slicing: primary '[' . expr0 ':' expr0 ']'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 83 (expr0)
+
+    expr          ir al estado 213
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    expr0         ir al estado 214
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 138
+
+  111 strings: strings STRING .
+
+    $default  reduce usando la regla 111 (strings)
+
+
+estado 139
+
+  134 assignment: lhs '=' . expr_or_tuple
+  135           | lhs '=' . assignment
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 31
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 33
+
+    expr           ir al estado 88
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    expr_or_tuple  ir al estado 215
+    tuple          ir al estado 90
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 44
+    subscription   ir al estado 45
+    slicing        ir al estado 46
+    lhs            ir al estado 47
+    target_list    ir al estado 48
+    targets        ir al estado 49
+    target         ir al estado 65
+    assignment     ir al estado 216
+    id             ir al estado 58
+
+
+estado 140
+
+   37 augmented_assign_op: "%=" .
+
+    $default  reduce usando la regla 37 (augmented_assign_op)
+
+
+estado 141
+
+   42 augmented_assign_op: "&=" .
+
+    $default  reduce usando la regla 42 (augmented_assign_op)
+
+
+estado 142
+
+   38 augmented_assign_op: "**=" .
+
+    $default  reduce usando la regla 38 (augmented_assign_op)
+
+
+estado 143
+
+   34 augmented_assign_op: "*=" .
+
+    $default  reduce usando la regla 34 (augmented_assign_op)
+
+
+estado 144
+
+   32 augmented_assign_op: "+=" .
+
+    $default  reduce usando la regla 32 (augmented_assign_op)
+
+
+estado 145
+
+   33 augmented_assign_op: "-=" .
+
+    $default  reduce usando la regla 33 (augmented_assign_op)
+
+
+estado 146
+
+   39 augmented_assign_op: "<<=" .
+
+    $default  reduce usando la regla 39 (augmented_assign_op)
+
+
+estado 147
+
+   40 augmented_assign_op: ">>=" .
+
+    $default  reduce usando la regla 40 (augmented_assign_op)
+
+
+estado 148
+
+   43 augmented_assign_op: "^=" .
+
+    $default  reduce usando la regla 43 (augmented_assign_op)
+
+
+estado 149
+
+   41 augmented_assign_op: "|=" .
+
+    $default  reduce usando la regla 41 (augmented_assign_op)
+
+
+estado 150
+
+   35 augmented_assign_op: "/=" .
+
+    $default  reduce usando la regla 35 (augmented_assign_op)
+
+
+estado 151
+
+   36 augmented_assign_op: "//=" .
+
+    $default  reduce usando la regla 36 (augmented_assign_op)
+
+
+estado 152
+
+  118 targets: target ',' .
+  119        | target ',' . target
+  120        | target ',' . targets
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '('     desplazar e ir al estado 31
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 33
+
+    $default  reduce usando la regla 118 (targets)
+
+    primary       ir al estado 63
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    targets       ir al estado 217
+    target        ir al estado 218
+    id            ir al estado 58
+
+
+estado 153
+
+   24 simple_stmt: target augmented_assign_op . expr_or_tuple
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr           ir al estado 88
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    expr_or_tuple  ir al estado 219
+    tuple          ir al estado 90
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 72
+    subscription   ir al estado 73
+    slicing        ir al estado 74
+    id             ir al estado 75
+
+
+estado 154
+
+  122 target: id "::" . id
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 220
+
+
+estado 155
+
+  168 class_stmt: "class" id '(' . id ')' ':' $@3 block
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 221
+
+
+estado 156
+
+  160 def_stmt: "def" id '(' . id_list0 ')' ':' $@2 block
+
+    ID  desplazar e ir al estado 8
+
+    $default  reduce usando la regla 165 (id_list0)
+
+    id        ir al estado 67
+    ids       ir al estado 77
+    id_list0  ir al estado 222
+
+
+estado 157
+
+  149 for_stmt: "for" lhs "in" . expr_or_tuple ':' loop_context suite else_part
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr           ir al estado 88
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    expr_or_tuple  ir al estado 223
+    tuple          ir al estado 90
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 72
+    subscription   ir al estado 73
+    slicing        ir al estado 74
+    id             ir al estado 75
+
+
+estado 158
+
+   21 simple_stmt: "from" id "import" . id_list
+
+    ID  desplazar e ir al estado 8
+
+    id       ir al estado 67
+    ids      ir al estado 224
+    id_list  ir al estado 225
+
+
+estado 159
+
+  163 ids: ids ',' . id
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 226
+
+
+estado 160
+
+  142 if_stmt: "if" expr ':' . if_context suite if_tail
+
+    $default  reduce usando la regla 147 (if_context)
+
+    if_context  ir al estado 227
+
+
+estado 161
+
+  163 ids: ids ',' . id
+  170 opt_comma: ',' .
+
+    ID  desplazar e ir al estado 8
+
+    $default  reduce usando la regla 170 (opt_comma)
+
+    id  ir al estado 226
+
+
+estado 162
+
+  166 id_list0: ids opt_comma .
+
+    $default  reduce usando la regla 166 (id_list0)
+
+
+estado 163
+
+   49 expr: "lambda" id_list0 ':' . expr
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 228
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 164
+
+   31 print_target: ">>" expr .
+
+    $default  reduce usando la regla 31 (print_target)
+
+
+estado 165
+
+   25 simple_stmt: "print" print_target ',' . expr_list_comma
+   27            | "print" print_target ',' . expr_list
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr             ir al estado 82
+    or_test          ir al estado 39
+    comparisons      ir al estado 40
+    term             ir al estado 41
+    exprs            ir al estado 83
+    expr_list        ir al estado 229
+    expr_list_comma  ir al estado 230
+    primary          ir al estado 42
+    strings          ir al estado 43
+    attributeref     ir al estado 72
+    subscription     ir al estado 73
+    slicing          ir al estado 74
+    id               ir al estado 75
+
+
+estado 166
+
+   86 exprs: exprs ',' . expr
+   90 expr_list_comma: exprs ',' .
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 90 (expr_list_comma)
+
+    expr          ir al estado 231
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 167
+
+   94 tuple: expr ',' .
+   95      | expr ',' . exprs opt_comma
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 94 (tuple)
+
+    expr          ir al estado 82
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    exprs         ir al estado 232
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 168
+
+  151 try_stmt: "try" ':' try_context . suite except_clauses
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 236
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 169
+
+  148 while_stmt: "while" expr ':' . loop_context suite else_part
+
+    $default  reduce usando la regla 150 (loop_context)
+
+    loop_context  ir al estado 237
+
+
+estado 170
+
+  102 primary: '(' expr ')' .
+
+    $default  reduce usando la regla 102 (primary)
+
+
+estado 171
+
+   99 primary: '(' tuple ')' .
+
+    $default  reduce usando la regla 99 (primary)
+
+
+estado 172
+
+  123 target: '(' lhs ')' .
+
+    $default  reduce usando la regla 123 (target)
+
+
+estado 173
+
+  133 pair: expr ':' . expr
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 238
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 174
+
+  130 pairs: pairs ',' . pair
+  170 opt_comma: ',' .
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 170 (opt_comma)
+
+    expr          ir al estado 100
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    pair          ir al estado 239
+    id            ir al estado 75
+
+
+estado 175
+
+  132 pairs0: pairs opt_comma .
+
+    $default  reduce usando la regla 132 (pairs0)
+
+
+estado 176
+
+  100 primary: '{' pairs0 '}' .
+
+    $default  reduce usando la regla 100 (primary)
+
+
+estado 177
+
+   86 exprs: exprs ',' . expr
+  170 opt_comma: ',' .
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 170 (opt_comma)
+
+    expr          ir al estado 231
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 178
+
+   89 exprs0: exprs opt_comma .
+
+    $default  reduce usando la regla 89 (exprs0)
+
+
+estado 179
+
+  101 primary: '[' exprs0 ']' .
+
+    $default  reduce usando la regla 101 (primary)
+
+
+estado 180
+
+  125 target: '[' target_list ']' .
+
+    $default  reduce usando la regla 125 (target)
+
+
+estado 181
+
+  124 target: '[' target ']' .
+
+    $default  reduce usando la regla 124 (target)
+
+
+estado 182
+
+    8 stmt: simple_stmts ';' NEWLINE .
+
+    $default  reduce usando la regla 8 (stmt)
+
+
+estado 183
+
+   12 simple_stmts: simple_stmts ';' simple_stmt .
+
+    $default  reduce usando la regla 12 (simple_stmts)
+
+
+estado 184
+
+   53 or_test: or_test . "or" or_test
+   54        | or_test . "and" or_test
+   54        | or_test "and" or_test .
+
+    $default  reduce usando la regla 54 (or_test)
+
+
+estado 185
+
+   50 expr: or_test "if" or_test . "else" expr
+   53 or_test: or_test . "or" or_test
+   54        | or_test . "and" or_test
+
+    "and"   desplazar e ir al estado 111
+    "else"  desplazar e ir al estado 240
+    "or"    desplazar e ir al estado 113
+
+
+estado 186
+
+   53 or_test: or_test . "or" or_test
+   53        | or_test "or" or_test .
+   54        | or_test . "and" or_test
+
+    "and"  desplazar e ir al estado 111
+
+    $default  reduce usando la regla 53 (or_test)
+
+
+estado 187
+
+   61 comparisons: comparisons '<' term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 61 (comparisons)
+
+
+estado 188
+
+   62 comparisons: comparisons '>' term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 62 (comparisons)
+
+
+estado 189
+
+   66 comparisons: comparisons "!=" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 66 (comparisons)
+
+
+estado 190
+
+   63 comparisons: comparisons "<=" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 63 (comparisons)
+
+
+estado 191
+
+   65 comparisons: comparisons "==" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 65 (comparisons)
+
+
+estado 192
+
+   64 comparisons: comparisons ">=" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 64 (comparisons)
+
+
+estado 193
+
+   58 comparisons: comparisons "in" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 58 (comparisons)
+
+
+estado 194
+
+   60 comparisons: comparisons "is" "not" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 241
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 195
+
+   59 comparisons: comparisons "is" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 59 (comparisons)
+
+
+estado 196
+
+   57 comparisons: comparisons "not" "in" . term
+
+    FLOAT   desplazar e ir al estado 7
+    ID      desplazar e ir al estado 8
+    INT     desplazar e ir al estado 9
+    STRING  desplazar e ir al estado 10
+    '+'     desplazar e ir al estado 28
+    '-'     desplazar e ir al estado 29
+    '~'     desplazar e ir al estado 30
+    '('     desplazar e ir al estado 69
+    '{'     desplazar e ir al estado 32
+    '['     desplazar e ir al estado 70
+
+    term          ir al estado 242
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 197
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+   82     | term "**" term .
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 82 (term)
+
+
+estado 198
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   78     | term "//" term .
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 78 (term)
+
+
+estado 199
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   71     | term "<<" term .
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 71 (term)
+
+
+estado 200
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   72     | term ">>" term .
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 72 (term)
+
+
+estado 201
+
+   68 term: term . '|' term
+   68     | term '|' term .
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 68 (term)
+
+
+estado 202
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   69     | term '^' term .
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 69 (term)
+
+
+estado 203
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   70     | term '&' term .
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 70 (term)
+
+
+estado 204
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   73     | term '+' term .
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 73 (term)
+
+
+estado 205
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   74     | term '-' term .
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 74 (term)
+
+
+estado 206
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   75     | term '*' term .
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 75 (term)
+
+
+estado 207
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   76     | term '/' term .
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 76 (term)
+
+
+estado 208
+
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   77     | term '%' term .
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+
+    $default  reduce usando la regla 77 (term)
+
+
+estado 209
+
+  112 attributeref: primary '.' id .
+
+    $default  reduce usando la regla 112 (attributeref)
+
+
+estado 210
+
+   97 primary: primary '(' ')' .
+
+    $default  reduce usando la regla 97 (primary)
+
+
+estado 211
+
+   86 exprs: exprs . ',' expr
+   91 expr_list_opt_comma: exprs . opt_comma
+
+    ','  desplazar e ir al estado 177
+
+    $default  reduce usando la regla 169 (opt_comma)
+
+    opt_comma  ir al estado 243
+
+
+estado 212
+
+   96 primary: primary '(' expr_list_opt_comma . ')'
+
+    ')'  desplazar e ir al estado 244
+
+
+estado 213
+
+   84 expr0: expr .
+  113 subscription: primary '[' expr . ']'
+
+    ']'  desplazar e ir al estado 245
+
+    $default  reduce usando la regla 84 (expr0)
+
+
+estado 214
+
+  114 slicing: primary '[' expr0 . ':' expr0 ']'
+
+    ':'  desplazar e ir al estado 246
+
+
+estado 215
+
+  134 assignment: lhs '=' expr_or_tuple .
+
+    $default  reduce usando la regla 134 (assignment)
+
+
+estado 216
+
+  135 assignment: lhs '=' assignment .
+
+    $default  reduce usando la regla 135 (assignment)
+
+
+estado 217
+
+  120 targets: target ',' targets .
+
+    $default  reduce usando la regla 120 (targets)
+
+
+estado 218
+
+  118 targets: target . ','
+  119        | target . ',' target
+  119        | target ',' target .
+  120        | target . ',' targets
+
+    ','  desplazar e ir al estado 152
+
+    $default  reduce usando la regla 119 (targets)
+
+
+estado 219
+
+   24 simple_stmt: target augmented_assign_op expr_or_tuple .
+
+    $default  reduce usando la regla 24 (simple_stmt)
+
+
+estado 220
+
+  122 target: id "::" id .
+
+    $default  reduce usando la regla 122 (target)
+
+
+estado 221
+
+  168 class_stmt: "class" id '(' id . ')' ':' $@3 block
+
+    ')'  desplazar e ir al estado 247
+
+
+estado 222
+
+  160 def_stmt: "def" id '(' id_list0 . ')' ':' $@2 block
+
+    ')'  desplazar e ir al estado 248
+
+
+estado 223
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple . ':' loop_context suite else_part
+
+    ':'  desplazar e ir al estado 249
+
+
+estado 224
+
+  163 ids: ids . ',' id
+  164 id_list: ids .
+
+    ','  desplazar e ir al estado 159
+
+    $default  reduce usando la regla 164 (id_list)
+
+
+estado 225
+
+   21 simple_stmt: "from" id "import" id_list .
+
+    $default  reduce usando la regla 21 (simple_stmt)
+
+
+estado 226
+
+  163 ids: ids ',' id .
+
+    $default  reduce usando la regla 163 (ids)
+
+
+estado 227
+
+  142 if_stmt: "if" expr ':' if_context . suite if_tail
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 250
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 228
+
+   49 expr: "lambda" id_list0 ':' expr .
+
+    $default  reduce usando la regla 49 (expr)
+
+
+estado 229
+
+   27 simple_stmt: "print" print_target ',' expr_list .
+
+    $default  reduce usando la regla 27 (simple_stmt)
+
+
+estado 230
+
+   25 simple_stmt: "print" print_target ',' expr_list_comma .
+
+    $default  reduce usando la regla 25 (simple_stmt)
+
+
+estado 231
+
+   86 exprs: exprs ',' expr .
+
+    $default  reduce usando la regla 86 (exprs)
+
+
+estado 232
+
+   86 exprs: exprs . ',' expr
+   95 tuple: expr ',' exprs . opt_comma
+
+    ','  desplazar e ir al estado 177
+
+    $default  reduce usando la regla 169 (opt_comma)
+
+    opt_comma  ir al estado 251
+
+
+estado 233
+
+   46 stmt_block: NEWLINE . INDENT stmts DEDENT
+
+    INDENT  desplazar e ir al estado 252
+
+
+estado 234
+
+   12 simple_stmts: simple_stmts . ';' simple_stmt
+   44 stmt_block: simple_stmts . NEWLINE
+   45           | simple_stmts . ';' NEWLINE
+
+    NEWLINE  desplazar e ir al estado 253
+    ';'      desplazar e ir al estado 254
+
+
+estado 235
+
+   47 suite: stmt_block .
+
+    $default  reduce usando la regla 47 (suite)
+
+
+estado 236
+
+  151 try_stmt: "try" ':' try_context suite . except_clauses
+
+    "except"  desplazar e ir al estado 255
+
+    except_clauses  ir al estado 256
+
+
+estado 237
+
+  148 while_stmt: "while" expr ':' loop_context . suite else_part
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 257
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 238
+
+  133 pair: expr ':' expr .
+
+    $default  reduce usando la regla 133 (pair)
+
+
+estado 239
+
+  130 pairs: pairs ',' pair .
+
+    $default  reduce usando la regla 130 (pairs)
+
+
+estado 240
+
+   50 expr: or_test "if" or_test "else" . expr
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 258
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 241
+
+   60 comparisons: comparisons "is" "not" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 60 (comparisons)
+
+
+estado 242
+
+   57 comparisons: comparisons "not" "in" term .
+   68 term: term . '|' term
+   69     | term . '^' term
+   70     | term . '&' term
+   71     | term . "<<" term
+   72     | term . ">>" term
+   73     | term . '+' term
+   74     | term . '-' term
+   75     | term . '*' term
+   76     | term . '/' term
+   77     | term . '%' term
+   78     | term . "//" term
+   82     | term . "**" term
+
+    "**"  desplazar e ir al estado 123
+    "//"  desplazar e ir al estado 124
+    "<<"  desplazar e ir al estado 125
+    ">>"  desplazar e ir al estado 126
+    '|'   desplazar e ir al estado 127
+    '^'   desplazar e ir al estado 128
+    '&'   desplazar e ir al estado 129
+    '+'   desplazar e ir al estado 130
+    '-'   desplazar e ir al estado 131
+    '*'   desplazar e ir al estado 132
+    '/'   desplazar e ir al estado 133
+    '%'   desplazar e ir al estado 134
+
+    $default  reduce usando la regla 57 (comparisons)
+
+
+estado 243
+
+   91 expr_list_opt_comma: exprs opt_comma .
+
+    $default  reduce usando la regla 91 (expr_list_opt_comma)
+
+
+estado 244
+
+   96 primary: primary '(' expr_list_opt_comma ')' .
+
+    $default  reduce usando la regla 96 (primary)
+
+
+estado 245
+
+  113 subscription: primary '[' expr ']' .
+
+    $default  reduce usando la regla 113 (subscription)
+
+
+estado 246
+
+  114 slicing: primary '[' expr0 ':' . expr0 ']'
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    $default  reduce usando la regla 83 (expr0)
+
+    expr          ir al estado 86
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    expr0         ir al estado 259
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 247
+
+  168 class_stmt: "class" id '(' id ')' . ':' $@3 block
+
+    ':'  desplazar e ir al estado 260
+
+
+estado 248
+
+  160 def_stmt: "def" id '(' id_list0 ')' . ':' $@2 block
+
+    ':'  desplazar e ir al estado 261
+
+
+estado 249
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple ':' . loop_context suite else_part
+
+    $default  reduce usando la regla 150 (loop_context)
+
+    loop_context  ir al estado 262
+
+
+estado 250
+
+  142 if_stmt: "if" expr ':' if_context suite . if_tail
+
+    "elif"  desplazar e ir al estado 263
+    "else"  desplazar e ir al estado 264
+
+    $default  reduce usando la regla 145 (else_part)
+
+    if_tail    ir al estado 265
+    else_part  ir al estado 266
+
+
+estado 251
+
+   95 tuple: expr ',' exprs opt_comma .
+
+    $default  reduce usando la regla 95 (tuple)
+
+
+estado 252
+
+   46 stmt_block: NEWLINE INDENT . stmts DEDENT
+
+    error       desplazar e ir al estado 6
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "class"     desplazar e ir al estado 12
+    "continue"  desplazar e ir al estado 13
+    "def"       desplazar e ir al estado 14
+    "for"       desplazar e ir al estado 15
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "if"        desplazar e ir al estado 18
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    "try"       desplazar e ir al estado 26
+    "while"     desplazar e ir al estado 27
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    stmts          ir al estado 267
+    stmt           ir al estado 35
+    simple_stmts   ir al estado 36
+    simple_stmt    ir al estado 37
+    expr           ir al estado 38
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 44
+    subscription   ir al estado 45
+    slicing        ir al estado 46
+    lhs            ir al estado 47
+    target_list    ir al estado 48
+    targets        ir al estado 49
+    target         ir al estado 50
+    assignment     ir al estado 51
+    compound_stmt  ir al estado 52
+    if_stmt        ir al estado 53
+    while_stmt     ir al estado 54
+    for_stmt       ir al estado 55
+    try_stmt       ir al estado 56
+    def_stmt       ir al estado 57
+    id             ir al estado 58
+    class_stmt     ir al estado 59
+
+
+estado 253
+
+   44 stmt_block: simple_stmts NEWLINE .
+
+    $default  reduce usando la regla 44 (stmt_block)
+
+
+estado 254
+
+   12 simple_stmts: simple_stmts ';' . simple_stmt
+   45 stmt_block: simple_stmts ';' . NEWLINE
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 268
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmt   ir al estado 183
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 255
+
+  153 except_clauses: "except" . ':' suite
+  154               | "except" . expr target_opt ':' suite
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    ':'       desplazar e ir al estado 269
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 270
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 256
+
+  151 try_stmt: "try" ':' try_context suite except_clauses .
+  155 except_clauses: except_clauses . "except" ':' suite
+  156               | except_clauses . "except" expr target_opt ':' suite
+
+    "except"  desplazar e ir al estado 271
+
+    $default  reduce usando la regla 151 (try_stmt)
+
+
+estado 257
+
+  148 while_stmt: "while" expr ':' loop_context suite . else_part
+
+    "else"  desplazar e ir al estado 264
+
+    $default  reduce usando la regla 145 (else_part)
+
+    else_part  ir al estado 272
+
+
+estado 258
+
+   50 expr: or_test "if" or_test "else" expr .
+
+    $default  reduce usando la regla 50 (expr)
+
+
+estado 259
+
+  114 slicing: primary '[' expr0 ':' expr0 . ']'
+
+    ']'  desplazar e ir al estado 273
+
+
+estado 260
+
+  168 class_stmt: "class" id '(' id ')' ':' . $@3 block
+
+    $default  reduce usando la regla 167 ($@3)
+
+    $@3  ir al estado 274
+
+
+estado 261
+
+  160 def_stmt: "def" id '(' id_list0 ')' ':' . $@2 block
+
+    $default  reduce usando la regla 159 ($@2)
+
+    $@2  ir al estado 275
+
+
+estado 262
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple ':' loop_context . suite else_part
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 276
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 263
+
+  144 if_tail: "elif" . expr ':' suite if_tail
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 277
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 264
+
+  146 else_part: "else" . ':' suite
+
+    ':'  desplazar e ir al estado 278
+
+
+estado 265
+
+  142 if_stmt: "if" expr ':' if_context suite if_tail .
+
+    $default  reduce usando la regla 142 (if_stmt)
+
+
+estado 266
+
+  143 if_tail: else_part .
+
+    $default  reduce usando la regla 143 (if_tail)
+
+
+estado 267
+
+    6 stmts: stmts . stmt
+   46 stmt_block: NEWLINE INDENT stmts . DEDENT
+
+    error       desplazar e ir al estado 6
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "class"     desplazar e ir al estado 12
+    "continue"  desplazar e ir al estado 13
+    "def"       desplazar e ir al estado 14
+    "for"       desplazar e ir al estado 15
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "if"        desplazar e ir al estado 18
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    "try"       desplazar e ir al estado 26
+    "while"     desplazar e ir al estado 27
+    DEDENT      desplazar e ir al estado 279
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    stmt           ir al estado 108
+    simple_stmts   ir al estado 36
+    simple_stmt    ir al estado 37
+    expr           ir al estado 38
+    or_test        ir al estado 39
+    comparisons    ir al estado 40
+    term           ir al estado 41
+    primary        ir al estado 42
+    strings        ir al estado 43
+    attributeref   ir al estado 44
+    subscription   ir al estado 45
+    slicing        ir al estado 46
+    lhs            ir al estado 47
+    target_list    ir al estado 48
+    targets        ir al estado 49
+    target         ir al estado 50
+    assignment     ir al estado 51
+    compound_stmt  ir al estado 52
+    if_stmt        ir al estado 53
+    while_stmt     ir al estado 54
+    for_stmt       ir al estado 55
+    try_stmt       ir al estado 56
+    def_stmt       ir al estado 57
+    id             ir al estado 58
+    class_stmt     ir al estado 59
+
+
+estado 268
+
+   45 stmt_block: simple_stmts ';' NEWLINE .
+
+    $default  reduce usando la regla 45 (stmt_block)
+
+
+estado 269
+
+  153 except_clauses: "except" ':' . suite
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 280
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 270
+
+  154 except_clauses: "except" expr . target_opt ':' suite
+
+    ','  desplazar e ir al estado 281
+
+    $default  reduce usando la regla 158 (target_opt)
+
+    target_opt  ir al estado 282
+
+
+estado 271
+
+  155 except_clauses: except_clauses "except" . ':' suite
+  156               | except_clauses "except" . expr target_opt ':' suite
+
+    FLOAT     desplazar e ir al estado 7
+    ID        desplazar e ir al estado 8
+    INT       desplazar e ir al estado 9
+    STRING    desplazar e ir al estado 10
+    "lambda"  desplazar e ir al estado 20
+    "not"     desplazar e ir al estado 21
+    '+'       desplazar e ir al estado 28
+    '-'       desplazar e ir al estado 29
+    '~'       desplazar e ir al estado 30
+    ':'       desplazar e ir al estado 283
+    '('       desplazar e ir al estado 69
+    '{'       desplazar e ir al estado 32
+    '['       desplazar e ir al estado 70
+
+    expr          ir al estado 284
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 72
+    subscription  ir al estado 73
+    slicing       ir al estado 74
+    id            ir al estado 75
+
+
+estado 272
+
+  148 while_stmt: "while" expr ':' loop_context suite else_part .
+
+    $default  reduce usando la regla 148 (while_stmt)
+
+
+estado 273
+
+  114 slicing: primary '[' expr0 ':' expr0 ']' .
+
+    $default  reduce usando la regla 114 (slicing)
+
+
+estado 274
+
+  168 class_stmt: "class" id '(' id ')' ':' $@3 . block
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 285
+    block         ir al estado 286
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 275
+
+  160 def_stmt: "def" id '(' id_list0 ')' ':' $@2 . block
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 285
+    block         ir al estado 287
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 276
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple ':' loop_context suite . else_part
+
+    "else"  desplazar e ir al estado 264
+
+    $default  reduce usando la regla 145 (else_part)
+
+    else_part  ir al estado 288
+
+
+estado 277
+
+  144 if_tail: "elif" expr . ':' suite if_tail
+
+    ':'  desplazar e ir al estado 289
+
+
+estado 278
+
+  146 else_part: "else" ':' . suite
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 290
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 279
+
+   46 stmt_block: NEWLINE INDENT stmts DEDENT .
+
+    $default  reduce usando la regla 46 (stmt_block)
+
+
+estado 280
+
+  153 except_clauses: "except" ':' suite .
+
+    $default  reduce usando la regla 153 (except_clauses)
+
+
+estado 281
+
+  157 target_opt: ',' . id
+
+    ID  desplazar e ir al estado 8
+
+    id  ir al estado 291
+
+
+estado 282
+
+  154 except_clauses: "except" expr target_opt . ':' suite
+
+    ':'  desplazar e ir al estado 292
+
+
+estado 283
+
+  155 except_clauses: except_clauses "except" ':' . suite
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 293
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 284
+
+  156 except_clauses: except_clauses "except" expr . target_opt ':' suite
+
+    ','  desplazar e ir al estado 281
+
+    $default  reduce usando la regla 158 (target_opt)
+
+    target_opt  ir al estado 294
+
+
+estado 285
+
+   48 block: stmt_block .
+
+    $default  reduce usando la regla 48 (block)
+
+
+estado 286
+
+  168 class_stmt: "class" id '(' id ')' ':' $@3 block .
+
+    $default  reduce usando la regla 168 (class_stmt)
+
+
+estado 287
+
+  160 def_stmt: "def" id '(' id_list0 ')' ':' $@2 block .
+
+    $default  reduce usando la regla 160 (def_stmt)
+
+
+estado 288
+
+  149 for_stmt: "for" lhs "in" expr_or_tuple ':' loop_context suite else_part .
+
+    $default  reduce usando la regla 149 (for_stmt)
+
+
+estado 289
+
+  144 if_tail: "elif" expr ':' . suite if_tail
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 295
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 290
+
+  146 else_part: "else" ':' suite .
+
+    $default  reduce usando la regla 146 (else_part)
+
+
+estado 291
+
+  157 target_opt: ',' id .
+
+    $default  reduce usando la regla 157 (target_opt)
+
+
+estado 292
+
+  154 except_clauses: "except" expr target_opt ':' . suite
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 296
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 293
+
+  155 except_clauses: except_clauses "except" ':' suite .
+
+    $default  reduce usando la regla 155 (except_clauses)
+
+
+estado 294
+
+  156 except_clauses: except_clauses "except" expr target_opt . ':' suite
+
+    ':'  desplazar e ir al estado 297
+
+
+estado 295
+
+  144 if_tail: "elif" expr ':' suite . if_tail
+
+    "elif"  desplazar e ir al estado 263
+    "else"  desplazar e ir al estado 264
+
+    $default  reduce usando la regla 145 (else_part)
+
+    if_tail    ir al estado 298
+    else_part  ir al estado 266
+
+
+estado 296
+
+  154 except_clauses: "except" expr target_opt ':' suite .
+
+    $default  reduce usando la regla 154 (except_clauses)
+
+
+estado 297
+
+  156 except_clauses: except_clauses "except" expr target_opt ':' . suite
+
+    FLOAT       desplazar e ir al estado 7
+    ID          desplazar e ir al estado 8
+    INT         desplazar e ir al estado 9
+    STRING      desplazar e ir al estado 10
+    "break"     desplazar e ir al estado 11
+    "continue"  desplazar e ir al estado 13
+    "from"      desplazar e ir al estado 16
+    "global"    desplazar e ir al estado 17
+    "import"    desplazar e ir al estado 19
+    "lambda"    desplazar e ir al estado 20
+    "not"       desplazar e ir al estado 21
+    "pass"      desplazar e ir al estado 22
+    "print"     desplazar e ir al estado 23
+    "raise"     desplazar e ir al estado 24
+    "return"    desplazar e ir al estado 25
+    NEWLINE     desplazar e ir al estado 233
+    '+'         desplazar e ir al estado 28
+    '-'         desplazar e ir al estado 29
+    '~'         desplazar e ir al estado 30
+    '('         desplazar e ir al estado 31
+    '{'         desplazar e ir al estado 32
+    '['         desplazar e ir al estado 33
+
+    simple_stmts  ir al estado 234
+    simple_stmt   ir al estado 37
+    stmt_block    ir al estado 235
+    suite         ir al estado 299
+    expr          ir al estado 38
+    or_test       ir al estado 39
+    comparisons   ir al estado 40
+    term          ir al estado 41
+    primary       ir al estado 42
+    strings       ir al estado 43
+    attributeref  ir al estado 44
+    subscription  ir al estado 45
+    slicing       ir al estado 46
+    lhs           ir al estado 47
+    target_list   ir al estado 48
+    targets       ir al estado 49
+    target        ir al estado 50
+    assignment    ir al estado 51
+    id            ir al estado 58
+
+
+estado 298
+
+  144 if_tail: "elif" expr ':' suite if_tail .
+
+    $default  reduce usando la regla 144 (if_tail)
+
+
+estado 299
+
+  156 except_clauses: except_clauses "except" expr target_opt ':' suite .
+
+    $default  reduce usando la regla 156 (except_clauses)
