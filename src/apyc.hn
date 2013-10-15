@@ -43,10 +43,12 @@
   static stack<int> indents;
   static int ifwhilefor = 0;
   static int func_depth = 0;
+  static int loop_depth = 0;
   static int indentnum = 0;
   static int paren = 0;
   static int brack = 0;
   static int curly = 0;
+  static bool in_class = false;
 
 %}
 
@@ -165,10 +167,10 @@ interactive_input : (stmt_list)? NEWLINE!
 file_input : (NEWLINE! | statement)*
            ;
 
-classname : identifier { if(indentnum > 0) error(yysource_location(), "No nested classes allowed!"); }
+classname : identifier { if(in_class) error(yysource_location(), "No nested classes allowed!"); }
           ;
 
-classdef : "class" classname ("of"! BRACK! type_var (',' type_var)* EBRACK!)? ":"! suite
+classdef : "class" classname ("of"! BRACK! type_var (',' type_var)* EBRACK!)? ":"! { if ( indents.top() != 0 ){ error(yysource_location(), "cant have indented class");} in_class = true; } suite { in_class = false; } 
          { AST_Ptr formal = $^(TYPE_FOR, $type_var);
            formal->set_loc(yysource_location());
            $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
@@ -198,19 +200,17 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN!
-                (TYPE_OP!)? type0 ":"! func_suite
-            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
-        | "def"! funcname PAREN! (parameter_list) ENDPAREN! (TYPE_OP!)? type0 ":"!
-            native_suite
-           { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $native_suite)); }
+funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! { if ( indents.top() != 0 && func_depth != 0 && !in_class ){ cout << "hello"; error(yysource_location(), "cant have indented method");}  func_depth += 1; }
+                (TYPE_OP!)? type0 ":"! func_suite { func_depth -= 1;  $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
+        | "def"! funcname PAREN! (parameter_list) ENDPAREN! {  if ( indents.top() != 0 && func_depth != 0 && !in_class ){ cout << "hello"; error(yysource_location(), "cant have indented method");} func_depth += 1; } (TYPE_OP!)? type0 ":"! 
+            native_suite  { func_depth -= 1;    $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $native_suite)); }
         ;
 
 for_stmt : "for"! (target_list | target) "in"! expression_list
-            ":"! while_suite else_suite { $$ = $^(FOR, $*); }
+            ":"! { loop_depth += 1; }  while_suite { loop_depth -= 1; }  else_suite { $$ = $^(FOR, $*); }
             ;
 
-while_stmt : "while"! expression ":"! while_suite else_suite { $$ = $^(WHILE, $*); }
+while_stmt : "while"! expression ":"! { loop_depth += 1; } while_suite { loop_depth -= 1; } else_suite { $$ = $^(WHILE, $*); }
             ;
 
 if_stmt : "if"! expression ":"! while_suite
@@ -246,22 +246,10 @@ native_suite : "native"! stringliteral NEWLINE! { $$ = $^(NATIVE, $stringliteral
         { $$ = $^(NATIVE, $stringliteral); }
              ;
       
-func_suite : stmt_list newline
-      | NEWLINE! INDENT! statement+ dedent
+func_suite : stmt_list NEWLINE!
+      | NEWLINE! INDENT! statement+ DEDENT
       ;
       
-classline : NEWLINE! { in_class = false; }
-        ;
-        
-classdent : DEDENT! { in_class = false; }
-       ;
-
-newline : NEWLINE! { func_depth -= 1; }
-        ;
-        
-dedent : DEDENT! { func_depth -= 1; }
-       ;
-
 while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? NEWLINE! { $$ = $^(STMT_LIST, $*); }
       | simple_stmt (";"!)?
       | NEWLINE! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
@@ -275,10 +263,12 @@ compound_stmt : if_stmt
               | classdef
               ;
 
-continue_stmt : "continue"! { AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok; }
+continue_stmt : "continue"! {  if (loop_depth == 0) error(yysource_location(), "@continue outside loop");
+                               AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok; }
               ;
 
-break_stmt : "break"! { AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location()); $$ = tok; }
+break_stmt : "break"! { if (loop_depth == 0) error(yysource_location(), "@break outside loop");
+                            AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location()); $$ = tok; }
            ;
 
 return_stmt : "return"! (expression_list)?
@@ -652,7 +642,7 @@ RAWSTRING :  _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_SIZE - 3, 
    ;
 
 * : ( ( ("\"\"\"" _DOUBLEQUOTES? _RAWLONGSTRING_DOUBLE* )
-   | ("'''" _SINGLEQUOTES? _RAWLONGSTRING_SINGLE* ) ) ) { cout << $TEXT; error(yysource_location(), "unterminated long string"); }
+   | ("'''" _SINGLEQUOTES? _RAWLONGSTRING_SINGLE* ) ) ) { error(yysource_location(), "unterminated long string"); }
   | ( ( ("\"\"\"" _DOUBLEQUOTES? _LONGSTRING_DOUBLE* )
     | ("'''" _SINGLEQUOTES? _LONGSTRING_SINGLE* ) ) ) { error(yysource_location(), "unterminated long string"); }
  
