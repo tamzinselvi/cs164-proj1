@@ -37,9 +37,7 @@
    *  TOKEN. */
   static AST_Ptr make_id (AST_Ptr& token);
 
-  bool validTargetList(AST_Ptr& token);
-  bool validTargetList(const AST_Ptr& token);
-  string getTokenType(AST_Ptr& token);
+  void validTargetList(const AST_Ptr& token);
   string getTokenType(const AST_Ptr& token);
 
   static stack<int> indents;
@@ -295,13 +293,12 @@ target_list : ("("!) target (","! target)* (","!)? (")"!) { $$ = $^(TARLIST, $*)
             | "("! target (','! target)+ ")"!              { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1 {
-      AST_Ptr assignment;
-      if (!($id_type_op.missing())) assignment = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
-      else assignment = $^(ASSIGN, $*);
-      if (!($expression_list.missing()) && !validTargetList($expression_list.value())) error(yysource_location(), "assignment left side not target list");
-      $$ = assignment;
-    }
+assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1
+                  {
+                    if (!($id_type_op.missing())) $$ = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
+                    else $$ = $^(ASSIGN, $*);
+                    if (!($expression_list.missing())) validTargetList($expression_list.value());
+                  }
                 ;
 
 as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
@@ -702,53 +699,18 @@ void processIndent( const char* text)
   }
 }
 
-bool validTargetList(AST_Ptr& token)
+void validTargetList(const AST_Ptr& token)
 {
   string type = getTokenType(token);
-  if (type == "identifier" || type == "attributeref" || type == "subscription" || type == "slicing" || type == "typed_id") return true;
-  else if (type == "expr_list")
-  {
-    bool res = true;
+  bool valid = true;
+  if (type == "expr_list")
     for_each_child (c, token) {
-      if (getTokenType(c) == "expr_list") return false;
-      res = res || validTargetList(c);
+      type = getTokenType(c);
+      if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
     } end_for;
-    return res;
-  }
+  else if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
 
-  return false;
-}
-
-bool validTargetList(const AST_Ptr& token)
-{
-  string type = getTokenType(token);
-  if (type == "id" || type == "attributeref" || type == "subscription" || type == "slicing" || type == "typed_id") return true;
-  else if (type == "expr_list")
-  {
-    bool res = true;
-    for_each_child (c, token) {
-      if (getTokenType(c) == "expr_list") return false;
-      res = res || validTargetList(c);
-    } end_for;
-    return res;
-  }
-
-  return false;
-}
-
-string getTokenType(AST_Ptr& token)
-{
-  std::stringstream buffer;
-  token->print(buffer, 0);
-  string print = buffer.str();
-  size_t pLoc = print.find("(");
-  size_t spLoc = print.find(" ");
-
-  if (pLoc != string::npos)
-    if (spLoc != string::npos)
-      return print.substr(pLoc + 1, spLoc - (pLoc + 1));
-
-  return "";
+  if (!valid) error(yysource_location(), "assignment @expr_list not equivalent to @target_list");
 }
 
 string getTokenType(const AST_Ptr& token)
