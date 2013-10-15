@@ -425,6 +425,8 @@ argument_list : positional_arguments (','! keyword_arguments)?
               ;
 
 call : primary PAREN! (argument_list (','!)?)? ENDPAREN! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
+     | type_id PAREN! (argument_list (','!)?)? ENDPAREN! 
+     { $$ = $^(CALL, $type_id, $^(EXPR_LIST, $argument_list)); }
      ;
 
 upper_bound : expression
