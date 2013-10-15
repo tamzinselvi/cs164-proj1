@@ -411,7 +411,7 @@ key_datum : expression ':'! expression { $$ = $^(PAIR, $*); }
 key_datum_list : key_datum (','! key_datum)* (','!)?
                ;
 
-dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP, $^(EMPTY)); }
+dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP); }
              | '{'! (key_datum_list) '}'! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
 
@@ -499,7 +499,6 @@ _LETTER : (_LOWER | _UPPER)
 
 _NEWLINE : "\r"? "\n" ;
 NEWLINE : "\r"? "\n" ;
-        
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
