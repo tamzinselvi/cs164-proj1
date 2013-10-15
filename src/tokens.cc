@@ -144,8 +144,8 @@ private:
         else {
             value = atoi(s);
         }
-        long bound = -1073741824;
-        if ((value < bound) || (value > -bound - 1)) {
+        long bound = 1073741824;
+        if ((value > bound) || (value < 0)) {
             error(s, "All integer literals must be in the range [0, 2^30].");
         }
         return this;
