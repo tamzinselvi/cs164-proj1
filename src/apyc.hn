@@ -419,6 +419,7 @@ dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP); }
              ;
 
 list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DISP, $*); }
+             | '[' ']' { $$ = $^(LIST_DISP); }
              ;
 
 parenth_form : '('! (expression_list)? ')'!
