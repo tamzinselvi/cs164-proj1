@@ -5,7 +5,7 @@
 /* Authors: */
 
 /** idreg = [a-zA-Z_] [a-zA-Z_0-9]*
- * attreg = identifier|literal|enclosure|attributeref|subscription|slicing|call 
+ * attreg = identifier|literal|enclosure|attributeref|subscription|slicing|call
  * '.' [a-zA-Z_][a-zA-Z_0-9]* */
 
 %define semantic_tree_type "AST"
@@ -153,8 +153,8 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite 
-         { AST_Ptr formal = $^(TYPE_FOR, $type_var); 
+classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite
+         { AST_Ptr formal = $^(TYPE_FOR, $type_var);
            formal->set_loc(yysource_location());
            $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
          }
@@ -254,16 +254,18 @@ return_stmt : "return"! (expression_list)?
 print_stmt : "print"! file_spec print_list { $$ = $^(PRINT, $file_spec, $print_list); }
             | "print"! file_spec (println_list)? { $$ = $^(PRINTLN, $file_spec, $println_list); }
            ;
-           
+
 file_spec : ">>"! stringliteral
           | /* empty */ { $$ = $^(EMPTY); }
           ;
-           
+
 print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
+           | /* empty */ { $$ = $^(EXPR_LIST); }
            ;
 
 println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
-            ;
+             | /* empty */ { $$ = $^(EXPR_LIST); }
+             ;
 
 pass_stmt : pass { AST_Ptr tok = $^(STMT_LIST); tok->set_loc(yysource_location()); $$ = tok; }
           ;
@@ -436,7 +438,7 @@ typed_id : ID TYPE_OP! type { $$ = $^(TYPED_ID, $*); }
          | id_type_op type { $$ = $^(TYPED_ID, $*); }
          ;
 
-type : type_id 
+type : type_id
      | type_var
      | '('! type_list0 ')'! "->"! type { $$ = $^(FUNCTION_TYPE, $type, $type_list0); }
      ;
@@ -460,7 +462,7 @@ type0 : type
 identifier : ID
            | illegal_keyword
            ;
-           
+
 id_type_op : ID_TYPE_OP ;
 
 keyword : "and"     | "not"      | "while"
