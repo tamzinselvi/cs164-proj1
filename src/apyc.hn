@@ -244,7 +244,7 @@ break_stmt : "break"! { AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location(
 
 return_stmt : "return"! (expression_list)?
             { if ($expression_list.missing()) {
-                AST_Ptr tok = $^(RETURN); tok->set_loc(yysource_location()); $$ = tok;
+                AST_Ptr tok = $^(RETURN, $^(EMPTY)); tok->set_loc(yysource_location()); $$ = tok;
               } else {
                 $$ = $^(RETURN, $*);
               }

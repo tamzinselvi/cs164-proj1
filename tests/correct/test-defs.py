@@ -1,4 +1,4 @@
- x = 3
+x = 3
 
 def f1(): return 7
 
