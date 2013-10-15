@@ -41,10 +41,9 @@
   string getTokenType(const AST_Ptr& token);
 
   static stack<int> indents;
-
-  static int function_depth = 0;
-  static int loop_depth = 0;
-  static bool in_class = false;
+  static int ifwhilefor = 0;
+  static int func_depth = 0;
+  static int indentnum = 0;
   static int paren = 0;
   static int brack = 0;
   static int curly = 0;
@@ -166,7 +165,7 @@ interactive_input : (stmt_list)? NEWLINE!
 file_input : (NEWLINE! | statement)*
            ;
 
-classname : identifier
+classname : identifier { if(indentnum > 0) error(yysource_location(), "No nested classes allowed!"); }
           ;
 
 classdef : "class" classname ("of"! BRACK! (type_var)* EBRACK!)? ":"! suite
@@ -183,7 +182,7 @@ stringpart : STRING
 stringliteral : stringliteral stringpart { $stringliteral.value()->as_token()->append_text($stringpart.value()->as_token()->string_text()); $$ = $stringliteral; }
               ;
 
-funcname : identifier
+funcname : identifier { if (ifwhilefor > 0) error(yysource_location(), "Can't have a function declration inside an if, while, or for!"); func_depth += 1; }
          ;
 
 parameter : identifier
@@ -199,8 +198,8 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"! suite
-            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
+funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"! func_suite
+            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
         | "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"!
             ("native"! stringliteral NEWLINE!
             | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!)
@@ -219,13 +218,16 @@ if_stmt : "if"! expression ":"! while_suite
         | "if"! expression ":"! while_suite
             elif_suite { $$ = $^(IF, $*); }
             ;
+            
+if_head : "if"! expression ":"! { ifwhilefor += 1; }
+        ;
 
 elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
            | else_suite
            ;
 
-else_suite : "else"! ":"! while_suite { $$ = $^(STMT_LIST, $*); }
-           | /* empty */ { $$ = $^(EMPTY); }
+else_suite : "else"! ":"! while_suite { ifwhilefor -= 1; $$ = $^(STMT_LIST, $*); }
+           | /* empty */ { ifwhilefor -= 1; $$ = $^(EMPTY); }
            ;
 
 stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
@@ -238,6 +240,22 @@ statement : stmt_list NEWLINE! | compound_stmt
 suite : stmt_list NEWLINE!
       | NEWLINE! INDENT! statement+ DEDENT!
       ;
+      
+func_suite : stmt_list newline
+      | NEWLINE! INDENT! statement+ dedent
+      ;
+      
+classline : NEWLINE! { in_class = false; }
+        ;
+        
+classdent : DEDENT! { in_class = false; }
+       ;
+
+newline : NEWLINE! { func_depth -= 1; }
+        ;
+        
+dedent : DEDENT! { func_depth -= 1; }
+       ;
 
 while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? NEWLINE! { $$ = $^(STMT_LIST, $*); }
       | simple_stmt (";"!)?
@@ -259,7 +277,8 @@ break_stmt : "break"! { AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location(
            ;
 
 return_stmt : "return"! (expression_list)?
-            { if ($expression_list.missing()) {
+            {  if (func_depth == 0) error(yysource_location(), "@return outside function");
+               if ($expression_list.missing()) {
                 AST_Ptr tok = $^(RETURN, $^(EMPTY)); tok->set_loc(yysource_location()); $$ = tok;
               } else {
                 $$ = $^(RETURN, $*);
@@ -497,6 +516,7 @@ illegal_keyword : ( "as"     | "assert" | "del"     | "except"
                   | "global" | "import" | "lambda"
                   | "raise"  | "try" | "with" | "yield"
                   ) { error(yysource_location(), "invalid keyword"); };
+                  
 
 /* Shoulda been built-in */
 _DIGIT : ('0' .. '9')
@@ -726,11 +746,13 @@ void processIndent( const char* text)
   }
   if ( length > indents.top()  ) {
     indents.push(length);
+    indentnum += 1;
     yyqueue_token( INDENT, 0 );
   } else if ( length < indents.top() ) {
     while ( !indents.empty() ) {
       indents.pop();
       if ( length < indents.top() ) {
+        indentnum -= 1;
         yyqueue_token( DEDENT, 0 );
         continue;
       }
@@ -738,6 +760,7 @@ void processIndent( const char* text)
         error(yysource_location(), "inconsistent indentation");
       }
       if ( length == indents.top() ) {
+        indentnum -= 1;
         yyqueue_token( DEDENT, 0 );
         break;
       }
