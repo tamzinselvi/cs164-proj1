@@ -116,12 +116,11 @@
 %token SUBSCRIPT "@subscription"
 %token TARLIST "@target_list"
 %token TUPLE "@tuple"
-%token TYPED "@typed_id"
+%token TYPE "@type"
 %token TYPED_ID "@typed_id"
 %token TYPE_FOR "@type_formals_list"
 %token TYPE_LIST "@type_list"
 %token TYPE_OP
-%token TYPE_VAR "@type_var"
 %token UNOP "@unop"
 %token WHILE "@while"
 
@@ -151,8 +150,6 @@ classname : identifier
 classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite { AST_Ptr formal = $^(TYPE_FOR, $type_var); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
          ;
 
-type_var : TYPE_VAR
-
 stringpart : STRING
            | RAWSTRING
            ;
@@ -166,7 +163,7 @@ funcname : identifier
 parameter : identifier
           ;
 
-defparameter : parameter
+defparameter : parameter | typed_id
              ;
 
 defparameter : parameter ASGN! expression { $$ = $^(TYPED_ID, $*); }
@@ -176,22 +173,19 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list) ")"! ":"! suite
-            { $$ = $^(DEF, $funcname, $parameter_list, $^(EMPTY), $^(BLOCK, $suite)); }
-        | "def"! funcname "("! (parameter_list) ")"! ":"!
+funcdef : "def"! funcname "("! (parameter_list) ")"! type0 ":"! suite
+            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
+        | "def"! funcname "("! (parameter_list) ")"! type0 ":"!
             ("native"! stringliteral '\n'!
             | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
-           { $$ = $^(DEF, $funcname, $parameter_list, $^(BLOCK, $^(NATIVE, $stringliteral))); }
+           { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
         ;
 
 for_stmt : "for"! target_list "in"! expression_list
-            ":"! while_suite ("else"! ":"! while_suite) { $$ = $^(FOR, $*); }
-         | "for"! target_list "in"! expression_list
-            ":"! while_suite { $$ = $^(FOR, $target_list, $expression_list, $while_suite, $^(EMPTY)); }
+            ":"! while_suite else_suite { $$ = $^(FOR, $*); }
             ;
 
-while_stmt : "while"! expression ":"! while_suite ("else"! ":"! while_suite) { $$ = $^(WHILE, $*); }
-           | "while"! expression ":"! while_suite { $$ = $^(WHILE, $expression, $while_suite, $^(EMPTY)); }
+while_stmt : "while"! expression ":"! while_suite else_suite { $$ = $^(WHILE, $*); }
             ;
 
 if_stmt : "if"! expression ":"! while_suite
@@ -264,6 +258,7 @@ target : identifier
        | attributeref
        | subscription
        | slicing
+       | typed_id
        ;
 
 target_list : ("("!) target (","! target)* (","!)? (")"!) { $$ = $^(TARLIST, $*); }
@@ -272,7 +267,12 @@ target_list : ("("!) target (","! target)* (","!)? (")"!) { $$ = $^(TARLIST, $*)
             | "("! target (','! target)+ ")"!              { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
+assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1 {
+    if (!($id_type_op.missing())) {
+        $$ = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
+    } else {
+    $$ = $^(ASSIGN, $*);
+    } }
                 ;
 
 as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
@@ -418,6 +418,7 @@ list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DI
 parenth_form : '('! (expression_list)? ')'!
              ;
 
+/** should this be here? there's one defined above. */
 stringliteral : STRING | RAWSTRING
               ;
 
@@ -435,18 +436,20 @@ integer : INT_LITERAL
         ;
 
 typed_id : ID TYPE_OP! type { $$ = $^(TYPED_ID, $*); }
+         | id_type_op type { $$ = $^(TYPED_ID, $*); }
          ;
 
-type : identifier
+type : type_id 
      | type_var
-     | identifier "of"! '['! type_list0 ']'! { $$ = $^(FUNCTION_TYPE, $^(TYPE, $identifier, $^(TYPE_LIST)), $type_list0); }
+     | '('! type_list0 ')'! "->"! type { $$ = $^(FUNCTION_TYPE, $type, $type_list0); }
      ;
 
 type_var : TYPE_VAR
          ;
 
-type_id : identifier ("of"! type)? { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
-        | identifier "of"! '['! type_list ']'! { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
+type_id : identifier { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
+        | identifier "of"! '['! type_list0 ']'! { $$ = $^(TYPE, $*); }
+        | identifier "of"! type { $$ = $^(TYPE, $identifier, $^(TYPE_LIST, $type)); }
         ;
 
 type_list0 : type (','! type)* { $$ = $^(TYPE_LIST, $*); }
@@ -458,9 +461,13 @@ type0 : type
       ;
 
 type_formals : type_var (',' type_var)* { $^(TYPE_FOR, $*); }
+             ;
 
 identifier : ID
-           | illegal_keyword;
+           | illegal_keyword
+           ;
+           
+id_type_op : ID_TYPE_OP ;
 
 keyword : "and"     | "not"      | "while"
         | "elif"    | "or"
@@ -505,7 +512,10 @@ EQUAL : "=="
       ;
 
 TYPE_OP : "::"
-              ;
+        ;
+
+ID_TYPE_OP : (_LETTER | '_') (_LETTER | _DIGIT | '_')* "::"
+           ;
 
 /* Integers */
 _OCTDIGIT : ('0' .. '7')

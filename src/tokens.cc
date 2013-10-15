@@ -76,6 +76,28 @@ private:
 
 TOKEN_FACTORY(Type_Token, TYPE_VAR);
 
+/** Represents a token for "ID::" where the id is printed. */
+class IDType_Token : public AST_Token {
+private:
+    
+    void print (ostream& out, int indent) {
+        out << "(id " << lineNumber () << " " << identifier << ")";
+    }
+    
+    IDType_Token* post_make()
+    {
+        identifier = string(as_chars(), text_size() - 2);
+        return this;
+    }
+    
+    TOKEN_CONSTRUCTORS(IDType_Token, AST_Token);
+    
+    string identifier;
+    
+};
+
+TOKEN_FACTORY(IDType_Token, ID_TYPE_OP);
+
 
 /** Represents a simple statement. */
 class Simple_Token : public AST_Token {
