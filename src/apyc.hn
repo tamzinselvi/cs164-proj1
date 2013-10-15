@@ -39,6 +39,10 @@
 
   static stack<int> indents;
 
+  static int function_depth = 0;
+  static int loop_depth = 0;
+  static bool in_class = false;
+
 %}
 
 %debug
@@ -137,17 +141,17 @@ program : (input_input | eval_input | interactive_input | file_input)* { theTree
 
 /* Grammar */
 
-input_input : expression_list '\n'!
+input_input : expression_list NEWLINE!
             ;
 
-eval_input : expression_list ('\n'!)*
+eval_input : expression_list (NEWLINE!)*
            ;
 
-interactive_input : (stmt_list)? '\n'!?
-                  | compound_stmt '\n'!?
+interactive_input : (stmt_list)? NEWLINE!?
+                  | compound_stmt NEWLINE!?
                   ;
 
-file_input : ('\n'! | statement)*
+file_input : (NEWLINE! | statement)*
            ;
 
 classname : identifier
@@ -186,8 +190,8 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
 funcdef : "def"! funcname "("! (parameter_list) ")"! type0 ":"! suite
             { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
         | "def"! funcname "("! (parameter_list) ")"! type0 ":"!
-            ("native"! stringliteral '\n'!
-            | '\n'! INDENT! "native"! stringliteral '\n'! DEDENT!)
+            ("native"! stringliteral NEWLINE!
+            | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!)
            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
         ;
 
@@ -216,17 +220,17 @@ stmt_list : simple_stmt (";"! simple_stmt)+ (";"!)?
           | simple_stmt (";"!)?
           ;
 
-statement : stmt_list '\n'! | compound_stmt
+statement : stmt_list NEWLINE! | compound_stmt
           ;
 
-suite : stmt_list '\n'!
-      | '\n'! INDENT! statement+ DEDENT!
+suite : stmt_list NEWLINE!
+      | NEWLINE! INDENT! statement+ DEDENT!
       ;
 
-while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? '\n'! { $$ = $^(STMT_LIST, $*); }
+while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? NEWLINE! { $$ = $^(STMT_LIST, $*); }
       | simple_stmt (";"!)?
-      | '\n'! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
-      | '\n'! INDENT! statement DEDENT!
+      | NEWLINE! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
+      | NEWLINE! INDENT! statement DEDENT!
       ;
 
 compound_stmt : if_stmt
@@ -493,6 +497,10 @@ _UPPER : ('A' .. 'Z')
 _LETTER : (_LOWER | _UPPER)
         ;
 
+_NEWLINE : "\r"? "\n" ;
+NEWLINE : "\r"? "\n" ;
+        
+
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
    ;
@@ -534,11 +542,11 @@ INT_LITERAL : _DECIMALINTEGER | _OCTINTEGER | _HEXINTEGER
             ;
 
 /* Strings whoop whoop */
-_STRINGCHARS : _ANY - ('\\'|'\''|'"'|'\n')
+_STRINGCHARS : _ANY - ('\\'|'\''|'"'|'\n'|'\r')
              ;
 _SHORTSTRINGCHARS : _STRINGCHARS | '\\'
                   ;
-_LONGSTRINGCHARS : _STRINGCHARS  | '\n'
+_LONGSTRINGCHARS : _STRINGCHARS  | _NEWLINE
                 ;
 
 _RAWESCAPESEQ : '\\' _ANY
@@ -587,8 +595,11 @@ RAWSTRING : ('r'|'R') _RAWSHORTSTRING {  $$ = AST::make_token(RAWSTRING, $TEXT_S
 
 /* Comments and blank lines */
 _SAMELINE : _ANY - ('\n');
-* : (' ' | '\t' | '\r')* '#' _SAMELINE* _EOL %prefer { YYIGNORE; }
-  | _BOL  (' ' | '\t' | '\r' | '\n')* _EOL %prefer { YYIGNORE; }
+* : _BOL (' ' | '\t' | '\r')* '#'_SAMELINE* _NEWLINE %prefer { YYIGNORE; }
+  | (' ' | '\t' | '\r')* '#' _SAMELINE* _EOL { YYIGNORE; }
+  ;
+
+* : _BOL  (' ' | '\t' | '\r' )* _NEWLINE %prefer { YYIGNORE; }
   ;
 
 /* Handle indentation at the beginning of a line. */
