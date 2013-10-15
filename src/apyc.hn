@@ -258,13 +258,14 @@ return_stmt : "return"! (expression_list)?
             }
             ;
 
-print_stmt : "print"! file_spec print_list { $$ = $^(PRINT, $file_spec, $print_list); }
-            | "print"! file_spec (println_list)? { $$ = $^(PRINTLN, $file_spec, $println_list); }
+print_stmt : "print"! { $$ = $^(PRINTLN, $^(EMPTY), $^(EXPR_LIST)); }
+           | "print"! println_list { $$ = $^(PRINTLN, $^(EMPTY), $println_list); }
+           | "print"!  ">>"! expression { $$ = $^(PRINTLN, $expression, $^(EXPR_LIST)); }
+           | "print"!  ">>"! expression ','! println_list { $$ = $^(PRINTLN, $expression, $println_list); }
+           | "print"!  ">>"! expression ','! print_list { $$ = $^(PRINT, $expression, $print_list); }
+           | "print"! print_list { $$ = $^(PRINT, $^(EMPTY), $print_list); }
            ;
 
-file_spec : ">>"! stringliteral
-          | /* empty */ { $$ = $^(EMPTY); }
-          ;
 
 print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
            | /* empty */ { $$ = $^(EXPR_LIST); }
@@ -337,6 +338,7 @@ conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ 
                        ;
 
 expression : conditional_expression
+//           | NEWLINE INDENT conditional_expression
            ;
 
 comp_operator : '<' | '>' | EQUAL | ">=" | "<=" | "!="
@@ -607,6 +609,12 @@ _SAMELINE : _ANY - ('\n');
 /* Handle indentation at the beginning of a line. */
 * : _BOL (' ' | '\t')* %prefer { processIndent($TEXT); }
   ;
+
+/* line continuation */
+* : '\\' (' ' | '\t' )* _NEWLINE (' ' | '\t' )*   %prefer { YYIGNORE; }
+//  | '('|','  (' ' | '\t' )* _NEWLINE (' ' | '\t' )*  { YYIGNORE; }
+  ;
+
 
 /* Normally, throw away whitespace other than newline. */
 * : (' ' | '\t' | '\r')+
