@@ -4,6 +4,10 @@
 
 /* Authors: */
 
+/** idreg = [a-zA-Z_] [a-zA-Z_0-9]*
+ * attreg = identifier|literal|enclosure|attributeref|subscription|slicing|call 
+ * '.' [a-zA-Z_][a-zA-Z_0-9]* */
+
 %define semantic_tree_type "AST"
 
 %{
@@ -92,6 +96,7 @@
 %token CALL "@call"
 %token CLASS "@class"
 %token COMPARE "@compare"
+%token CONTINUE "@continue"
 %token DEDENT
 %token DEF "@def"
 %token DICT_DISP "@dict_display"
@@ -110,6 +115,7 @@
 %token PAIR "@pair"
 %token PRINT "@print"
 %token PRINTLN "@println"
+%token RETURN "@return"
 %token SIMPLE_STMT "@simple"
 %token SLICE "@slicing"
 %token STMT_LIST "@stmt_list"
@@ -147,7 +153,11 @@ file_input : ('\n'! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite { AST_Ptr formal = $^(TYPE_FOR, $type_var); formal->set_loc(yysource_location()); $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite)); }
+classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite 
+         { AST_Ptr formal = $^(TYPE_FOR, $type_var); 
+           formal->set_loc(yysource_location());
+           $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
+         }
          ;
 
 stringpart : STRING
@@ -229,24 +239,34 @@ compound_stmt : if_stmt
 name : identifier
      ;
 
-continue_stmt : continue { $$ = AST::make_token(SIMPLE_STMT, $continue.text_size(), $continue.c_text()); }
+continue_stmt : "continue"! { AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok; }
               ;
 
-continue : "continue"
-         ;
-
-break_stmt : break { $$ = AST::make_token(SIMPLE_STMT, $break.text_size(), $break.c_text()); }
+break_stmt : "break"! { AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location()); $$ = tok; }
            ;
 
-break : "break"
-      ;
-
-return_stmt : "return"^ (expression_list)?
+return_stmt : "return"! (expression_list)?
+            { if ($expression_list.missing()) {
+                AST_Ptr tok = $^(RETURN); tok->set_loc(yysource_location()); $$ = tok;
+              } else {
+                $$ = $^(RETURN, $*);
+              }
+            }
             ;
 
-print_stmt : "print"! print_list { $$ = $^(PRINT, $^(EMPTY), $print_list); }
-            | "print"! (println_list)? { $$ = $^(PRINTLN, $^(EMPTY), $println_list); }
+print_stmt : "print"! file_spec print_list { $$ = $^(PRINT, $file_spec, $print_list); }
+            | "print"! file_spec (println_list)? { $$ = $^(PRINTLN, $file_spec, $println_list); }
            ;
+           
+file_spec : ">>"! stringliteral
+          | /* empty */ { $$ = $^(EMPTY); }
+          ;
+           
+print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
+           ;
+
+println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
+            ;
 
 pass_stmt : pass { AST_Ptr tok = $^(STMT_LIST); tok->set_loc(yysource_location()); $$ = tok; }
           ;
@@ -298,12 +318,6 @@ expression_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
                 | expression (','! expression)+ { $$ = $^(TUPLE, $*); }
                 | expression
                 ;
-
-print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
-           ;
-
-println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
-            ;
 
 not_test : comparison | "not" not_test { $$ = make_unop($*); }
          ;
@@ -373,12 +387,6 @@ upper_bound : expression
             ;
 
 lower_bound : expression
-            ;
-
-short_slice : (lower_bound) ':'! (upper_bound)
-            | ':'! upper_bound { $$ = $^(EMPTY), $upper_bound; }
-            | lower_bound ':'! { $$ = $lower_bound, $^(EMPTY); }
-            | ':'!             { $$ = $^(EMPTY), $^(EMPTY); }
             ;
 
 simple_slicing : primary '['! (lower_bound) ':'! (upper_bound) ']'! { $$ = $^(SLICE, $*); }
