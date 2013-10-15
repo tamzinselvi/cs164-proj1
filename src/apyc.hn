@@ -206,7 +206,7 @@ funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"! func_suit
            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
         ;
 
-for_stmt : "for"! target_list "in"! expression_list
+for_stmt : "for"! (target_list | target) "in"! expression_list
             ":"! while_suite else_suite { $$ = $^(FOR, $*); }
             ;
 
@@ -316,10 +316,21 @@ target : identifier
        | typed_id
        ;
 
-target_list : (PAREN!) target (","! target)* (","!)? (ENDPAREN!) { $$ = $^(TARLIST, $*); }
-            | (BRACK!) target (","! target)* (","!)? (EBRACK!) { $$ = $^(TARLIST, $*); }
-            | (PAREN!)? target (ENDPAREN!)?
-            | PAREN! target (','! target)+ ENDPAREN!              { $$ = $^(TARLIST, $*); }
+target_list : target (','! target)+ (','!)
+                { $$ = $^(TARLIST, $*); }
+            | PAREN! target (','! target)+ (','!) ENDPAREN!
+                { $$ = $^(TARLIST, $*); }
+            | BRACK! target (','! target)+ (','!) EBRACK!
+                { $$ = $^(TARLIST, $*); }
+            | PAREN! target (','! target)+ ENDPAREN! 
+                { $$ = $^(TARLIST, $*); }
+            | BRACK! target (','! target)+ EBRACK!
+                { $$ = $^(TARLIST, $*); }
+            | target (','! target)+  { $$ = $^(TARLIST, $*); }
+            | (PAREN! | BRACK!)? target ','! (ENDPAREN! | EBRACK!)? { $$ = $^(TARLIST, $*); }
+            | (PAREN!) target (ENDPAREN!)
+            | target
+            | (BRACK!) target (EBRACK!) { $$ = $^(TARLIST, $*); }
             ;
 
 assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1
