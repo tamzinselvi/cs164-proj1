@@ -190,26 +190,24 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list) ")"! type0 ":"! suite
-            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
+funcdef : "def"! funcname "("! (parameter_list) ")"! type0 ":"! { function_depth += 1; } suite
+                 { function_depth -= 1; $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
         | "def"! funcname "("! (parameter_list) ")"! type0 ":"!
             ("native"! stringliteral NEWLINE!
-            | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!)
-           { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
+            | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!) { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
         ;
 
-for_stmt : "for"! target_list "in"! expression_list
-            ":"! while_suite else_suite { $$ = $^(FOR, $*); }
-            ;
+for_stmt : "for"! target_list "in"! expression_list ":"! { loop_depth += 1; } while_suite { loop_depth -= 1; } else_suite { $$ = $^(FOR, $*); }
+         ;
 
-while_stmt : "while"! expression ":"! while_suite else_suite { $$ = $^(WHILE, $*); }
-            ;
+while_stmt : "while"! expression ":"! { loop_depth += 1; } while_suite { loop_depth -= 1; } else_suite { $$ = $^(WHILE, $*); }
+           ;
 
 if_stmt : "if"! expression ":"! while_suite
             else_suite { $$ = $^(IF, $*); }
         | "if"! expression ":"! while_suite
             elif_suite { $$ = $^(IF, $*); }
-            ;
+        ;
 
 elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
            | else_suite
@@ -231,10 +229,10 @@ suite : stmt_list NEWLINE!
       ;
 
 while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? NEWLINE! { $$ = $^(STMT_LIST, $*); }
-      | simple_stmt (";"!)?
-      | NEWLINE! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
-      | NEWLINE! INDENT! statement DEDENT!
-      ;
+            | simple_stmt (";"!)?
+            | NEWLINE! INDENT! statement statement+ DEDENT! { $$ = $^(STMT_LIST, $*); }
+            | NEWLINE! INDENT! statement DEDENT!
+            ;
 
 compound_stmt : if_stmt
               | while_stmt
@@ -243,19 +241,29 @@ compound_stmt : if_stmt
               | classdef
               ;
 
-continue_stmt : "continue"! { AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok; }
+continue_stmt : "continue"!
+                {
+                  if (loop_depth == 0) error(yysource_location(), "@continue not properly in loop");
+                  AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok;
+                }
               ;
 
-break_stmt : "break"! { AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location()); $$ = tok; }
+break_stmt : "break"!
+             {
+               if (loop_depth == 0) error(yysource_location(), "@break outside loop");
+               AST_Ptr tok = $^(BREAK); tok->set_loc(yysource_location()); $$ = tok;
+             }
            ;
 
 return_stmt : "return"! (expression_list)?
-            { if ($expression_list.missing()) {
-                AST_Ptr tok = $^(RETURN, $^(EMPTY)); tok->set_loc(yysource_location()); $$ = tok;
-              } else {
-                $$ = $^(RETURN, $*);
+              {
+                if (function_depth == 0) error(yysource_location(), "@return outside function");
+                if ($expression_list.missing()) {
+                  AST_Ptr tok = $^(RETURN, $^(EMPTY)); tok->set_loc(yysource_location()); $$ = tok;
+                } else {
+                  $$ = $^(RETURN, $*);
+                }
               }
-            }
             ;
 
 print_stmt : "print"! { $$ = $^(PRINTLN, $^(EMPTY), $^(EXPR_LIST)); }
