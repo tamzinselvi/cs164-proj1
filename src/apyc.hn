@@ -45,6 +45,9 @@
   static int function_depth = 0;
   static int loop_depth = 0;
   static bool in_class = false;
+  static int paren = 0;
+  static int brack = 0;
+  static int curly = 0;
 
 %}
 
@@ -99,11 +102,15 @@
 %token ATTREF "@attributeref"
 %token BINOP "@binop"
 %token BLOCK "@block"
+%token BRACK
+%token EBRACK
 %token BREAK "@break"
 %token CALL "@call"
 %token CLASS "@class"
 %token COMPARE "@compare"
 %token CONTINUE "@continue"
+%token CURLY
+%token ECURLY
 %token DEDENT
 %token DEF "@def"
 %token DICT_DISP "@dict_display"
@@ -120,6 +127,8 @@
 %token MODULE "@module"
 %token NATIVE "@native"
 %token PAIR "@pair"
+%token PAREN
+%token ENDPAREN
 %token PRINT "@print"
 %token PRINTLN "@println"
 %token RETURN "@return"
@@ -160,7 +169,7 @@ file_input : (NEWLINE! | statement)*
 classname : identifier
           ;
 
-classdef : "class" classname ("of"! "["! (type_var)* "]"!)? ":"! suite
+classdef : "class" classname ("of"! BRACK! (type_var)* EBRACK!)? ":"! suite
          { AST_Ptr formal = $^(TYPE_FOR, $type_var);
            formal->set_loc(yysource_location());
            $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
@@ -190,9 +199,9 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname "("! (parameter_list) ")"! type0 ":"! suite
+funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"! suite
             { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $suite)); }
-        | "def"! funcname "("! (parameter_list) ")"! type0 ":"!
+        | "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"!
             ("native"! stringliteral NEWLINE!
             | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!)
            { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
@@ -288,10 +297,10 @@ target : identifier
        | typed_id
        ;
 
-target_list : ("("!) target (","! target)* (","!)? (")"!) { $$ = $^(TARLIST, $*); }
-            | ("["!) target (","! target)* (","!)? ("]"!) { $$ = $^(TARLIST, $*); }
-            | ("("!)? target (")"!)?
-            | "("! target (','! target)+ ")"!              { $$ = $^(TARLIST, $*); }
+target_list : (PAREN!) target (","! target)* (","!)? (ENDPAREN!) { $$ = $^(TARLIST, $*); }
+            | (BRACK!) target (","! target)* (","!)? (EBRACK!) { $$ = $^(TARLIST, $*); }
+            | (PAREN!)? target (ENDPAREN!)?
+            | PAREN! target (','! target)+ ENDPAREN!              { $$ = $^(TARLIST, $*); }
             ;
 
 assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1
@@ -380,7 +389,7 @@ argument_list : positional_arguments (','! keyword_arguments)?
               | keyword_arguments
               ;
 
-call : primary '('! (argument_list (','!)?)? ')'! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
+call : primary PAREN! (argument_list (','!)?)? ENDPAREN! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
      ;
 
 upper_bound : expression
@@ -389,16 +398,16 @@ upper_bound : expression
 lower_bound : expression
             ;
 
-simple_slicing : primary '['! (lower_bound) ':'! (upper_bound) ']'! { $$ = $^(SLICE, $*); }
-               | primary '['! ':'! (upper_bound) ']'! { $$ = $^(SLICE, $primary, $^(EMPTY), $upper_bound); }
-               | primary '['! (lower_bound) ':'! ']'! { $$ = $^(SLICE, $primary, $lower_bound, $^(EMPTY)); }
-               | primary '['! ':'! ']'!               { $$ = $^(SLICE, $primary,  $^(EMPTY), $^(EMPTY)); }
+simple_slicing : primary BRACK! (lower_bound) ':'! (upper_bound) EBRACK! { $$ = $^(SLICE, $*); }
+               | primary BRACK! ':'! (upper_bound) EBRACK! { $$ = $^(SLICE, $primary, $^(EMPTY), $upper_bound); }
+               | primary BRACK! (lower_bound) ':'! EBRACK! { $$ = $^(SLICE, $primary, $lower_bound, $^(EMPTY)); }
+               | primary BRACK! ':'! EBRACK!               { $$ = $^(SLICE, $primary,  $^(EMPTY), $^(EMPTY)); }
                ;
 
 slicing : simple_slicing
         ;
 
-subscription : primary '['! expression_list ']'! { $$ = $^(SUBSCRIPT, $*); }
+subscription : primary BRACK! expression_list EBRACK! { $$ = $^(SUBSCRIPT, $*); }
              ;
 
 attributeref : primary '.'! identifier { $$ = $^(ATTREF, $*); }
@@ -414,16 +423,16 @@ key_datum : expression ':'! expression { $$ = $^(PAIR, $*); }
 key_datum_list : key_datum (','! key_datum)* (','!)?
                ;
 
-dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP); }
-             | '{'! (key_datum_list) '}'! { $$ = $^(DICT_DISP, $key_datum_list); }
+dict_display : CURLY! (key_datum_list)? ECURLY! { $$ = $^(DICT_DISP); }
+             | CURLY! (key_datum_list) ECURLY! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
 
-list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DISP, $*); }
-             | '[' ']' { $$ = $^(LIST_DISP); }
+list_display : BRACK! expression (','! expression)* (','!)? EBRACK! { $$ = $^(LIST_DISP, $*); }
+             | BRACK EBRACK { $$ = $^(LIST_DISP); }
              ;
 
-parenth_form : '('! expression_list ')'!
-             | '('! ')'! { AST_Ptr tok = $^(TUPLE); tok->set_loc(yysource_location()); $$ = tok; }
+parenth_form : PAREN! expression_list ENDPAREN!
+             | PAREN! ENDPAREN! { AST_Ptr tok = $^(TUPLE); tok->set_loc(yysource_location()); $$ = tok; }
              ;
 
 /** should this be here? there's one defined above. */
@@ -449,14 +458,14 @@ typed_id : ID TYPE_OP! type { $$ = $^(TYPED_ID, $*); }
 
 type : type_id
      | type_var
-     | '('! type_list0 ')'! "->"! type { $$ = $^(FUNCTION_TYPE, $type, $type_list0); }
+     | PAREN! type_list0 ENDPAREN! "->"! type { $$ = $^(FUNCTION_TYPE, $type, $type_list0); }
      ;
 
 type_var : TYPE_VAR
          ;
 
 type_id : identifier { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
-        | identifier "of"! '['! type_list0 ']'! { $$ = $^(TYPE, $*); }
+        | identifier "of"! BRACK! type_list0 EBRACK! { $$ = $^(TYPE, $*); }
         | identifier "of"! type { $$ = $^(TYPE, $identifier, $^(TYPE_LIST, $type)); }
         ;
 
@@ -502,8 +511,9 @@ _UPPER : ('A' .. 'Z')
 _LETTER : (_LOWER | _UPPER)
         ;
 
-_NEWLINE : "\r"? "\n" ;
-NEWLINE : "\r"? "\n" ;
+_NEWLINE : "\r"? "\n" ; 
+NEWLINE : "\r"? "\n" { if((paren > 0) || (brack > 0) || (curly > 0)) { yy_set_bol(0); YYIGNORE;} }
+        ;
 
 /* Identifiers */
 ID : (_LETTER | '_') (_LETTER | _DIGIT | '_')*
@@ -612,9 +622,25 @@ _SAMELINE : _ANY - ('\n');
 
 /* line continuation */
 * : '\\' (' ' | '\t' )* _NEWLINE (' ' | '\t' )*   %prefer { YYIGNORE; }
-//  | '('|','  (' ' | '\t' )* _NEWLINE (' ' | '\t' )*  { YYIGNORE; }
+  ;
+  
+* : '(' %prefer { paren += 1; yyqueue_token(PAREN, 0); }
+  ;
+  
+* : ')' %prefer { paren -= 1; yyqueue_token(ENDPAREN, 0); }
   ;
 
+* : '[' %prefer { brack += 1; yyqueue_token(BRACK, 0); }
+  ;
+  
+* : ']' %prefer { brack -= 1; yyqueue_token(EBRACK, 0); }
+  ;
+  
+* : '{' %prefer { curly += 1; yyqueue_token(CURLY, 0); }
+  ;
+  
+* : '}' %prefer { curly -= 1; yyqueue_token(ECURLY, 0); }
+  ;
 
 /* Normally, throw away whitespace other than newline. */
 * : (' ' | '\t' | '\r')+
