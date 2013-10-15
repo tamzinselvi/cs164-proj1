@@ -150,7 +150,7 @@ input_input : expression_list NEWLINE!
 eval_input : expression_list (NEWLINE!)*
            ;
 
-interactive_input : (stmt_list)? NEWLINE!?
+interactive_input : (stmt_list)? NEWLINE!
                   | compound_stmt NEWLINE!?
                   ;
 
@@ -308,9 +308,6 @@ as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
 expression_stmt : expression_list { $$ = $^(STMT_LIST, $*); }
                 ;
 
-simple_stmt : assignment_stmt
-            ;
-
 simple_stmt : expression_stmt
             | assignment_stmt
             | print_stmt
@@ -320,8 +317,9 @@ simple_stmt : expression_stmt
             | pass_stmt
             ;
 
-expression_list : expression (','! expression)* (','!) { $$ = $^(TUPLE, $*); }
+expression_list : expression (','! expression)+ (','!) { $$ = $^(TUPLE, $*); }
                 | expression (','! expression)+ { $$ = $^(TUPLE, $*); }
+                | expression ','! { $$ = $^(TUPLE, $*); }
                 | expression
                 ;
 
@@ -422,7 +420,8 @@ list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DI
              | '[' ']' { $$ = $^(LIST_DISP); }
              ;
 
-parenth_form : '('! (expression_list)? ')'!
+parenth_form : '('! expression_list ')'!
+             | '('! ')'! { AST_Ptr tok = $^(TUPLE); tok->set_loc(yysource_location()); $$ = tok; }
              ;
 
 /** should this be here? there's one defined above. */
