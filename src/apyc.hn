@@ -236,9 +236,6 @@ compound_stmt : if_stmt
               | classdef
               ;
 
-name : identifier
-     ;
-
 continue_stmt : "continue"! { AST_Ptr tok = $^(CONTINUE); tok->set_loc(yysource_location()); $$ = tok; }
               ;
 
@@ -332,9 +329,6 @@ conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ 
                        | or_test
                        ;
 
-old_expression : or_test
-               ;
-
 expression : conditional_expression
            ;
 
@@ -380,9 +374,6 @@ argument_list : positional_arguments (','! keyword_arguments)?
 call : primary '('! (argument_list (','!)?)? ')'! { $$ = $^(CALL, $primary, $^(EXPR_LIST, $argument_list)); }
      ;
 
-ellipsis : "..."!
-         ;
-
 upper_bound : expression
             ;
 
@@ -417,8 +408,6 @@ key_datum_list : key_datum (','! key_datum)* (','!)?
 dict_display : '{'! (key_datum_list)? '}'! { $$ = $^(DICT_DISP, $^(EMPTY)); }
              | '{'! (key_datum_list) '}'! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
-
-old_expression_list : old_expression ((','! old_expression)+ (','!)?)? ;
 
 list_display : '['! expression (','! expression)* (','!)? ']'! { $$ = $^(LIST_DISP, $*); }
              ;
@@ -467,9 +456,6 @@ type_list0 : type (','! type)* { $$ = $^(TYPE_LIST, $*); }
 type0 : type
       | /* empty */ { $$ = $^(EMPTY); }
       ;
-
-type_formals : type_var (',' type_var)* { $^(TYPE_FOR, $*); }
-             ;
 
 identifier : ID
            | illegal_keyword
