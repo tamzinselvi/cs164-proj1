@@ -168,7 +168,7 @@ file_input : (NEWLINE! | statement)*
 classname : identifier { if(indentnum > 0) error(yysource_location(), "No nested classes allowed!"); }
           ;
 
-classdef : "class" classname ("of"! BRACK! (type_var)* EBRACK!)? ":"! suite
+classdef : "class" classname ("of"! BRACK! type_var (',' type_var)* EBRACK!)? ":"! suite
          { AST_Ptr formal = $^(TYPE_FOR, $type_var);
            formal->set_loc(yysource_location());
            $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
