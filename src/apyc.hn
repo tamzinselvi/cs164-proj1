@@ -198,12 +198,12 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
                | /* empty */ { AST_Ptr tok = $^(FORMALS); tok->set_loc(yysource_location()); $$ = tok; }
                ;
 
-funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"! func_suite
+funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN!
+                (TYPE_OP!)? type0 ":"! func_suite
             { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
-        | "def"! funcname PAREN! (parameter_list) ENDPAREN! type0 ":"!
-            ("native"! stringliteral NEWLINE!
-            | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!)
-           { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $^(NATIVE, $stringliteral))); }
+        | "def"! funcname PAREN! (parameter_list) ENDPAREN! (TYPE_OP!)? type0 ":"!
+            native_suite
+           { $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $native_suite)); }
         ;
 
 for_stmt : "for"! (target_list | target) "in"! expression_list
@@ -240,6 +240,11 @@ statement : stmt_list NEWLINE! | compound_stmt
 suite : stmt_list NEWLINE!
       | NEWLINE! INDENT! statement+ DEDENT!
       ;
+      
+native_suite : "native"! stringliteral NEWLINE! { $$ = $^(NATIVE, $stringliteral); }
+             | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!
+        { $$ = $^(NATIVE, $stringliteral); }
+             ;
       
 func_suite : stmt_list newline
       | NEWLINE! INDENT! statement+ dedent
@@ -341,7 +346,7 @@ assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stm
                   }
                 ;
 
-as_stmt1 : expression_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
+as_stmt1 : target_list ASGN! as_stmt1 { $$ = $^(ASSIGN, $*); }
          | expression_list
          ;
 
@@ -486,7 +491,9 @@ typed_id : ID TYPE_OP! type { $$ = $^(TYPED_ID, $*); }
          | id_type_op type { $$ = $^(TYPED_ID, $*); }
          ;
 
-type : type_id
+type : identifier { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
+     | identifier "of"! BRACK! type_list0 EBRACK! { $$ = $^(TYPE, $*); }
+     | identifier "of"! type { $$ = $^(TYPE, $identifier, $^(TYPE_LIST, $type)); }
      | type_var
      | PAREN! type_list0 ENDPAREN! "->"! type { $$ = $^(FUNCTION_TYPE, $type, $type_list0); }
      ;
