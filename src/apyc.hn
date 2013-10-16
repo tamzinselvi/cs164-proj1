@@ -358,7 +358,6 @@ simple_stmt : expression_stmt
             | break_stmt
             | continue_stmt
             | pass_stmt
-            | PAREN
             ;
 
 expression_list : expression (','! expression)+ (','!) { $$ = $^(TUPLE, $*); }
