@@ -128,15 +128,14 @@
 %token IN "@in"
 %token INDENT
 %token IS "@is"
-%token ISNOT "@isnot"
+%token ISNOT
 %token LEFT_COMPARE "@left_compare"
 %token LIST_DISP "@list_display"
 %token MODULE "@module"
 %token NATIVE "@native"
-%token NOTIN "@notin"
+%token NOTIN
 %token PAIR "@pair"
 %token PAREN "("
-%token ENDPAREN
 %token EXPRTARG
 %token PRINT "@print"
 %token PRINTLN "@println"
@@ -384,10 +383,17 @@ expression : conditional_expression
 comp_operator : '<' | '>' | EQUAL | ">=" | "<=" | "!="
               | isnot { $$ = AST::make_token(ID, 5, "isnot"); } | notin { $$ = AST::make_token(ID, 5, "notin"); } | "is" | "in"
               ;
-isnot : "is" WS? "not"
+
+isnot : ISNOT | "is" WS* "not"
       ;
 
-notin : "not" WS? "in"
+ISNOT : "is not"
+      ;
+      
+notin : NOTIN | "not" WS* "in"
+      ;
+
+NOTIN : "not in"
       ;
 
 comparison : (left_comparison | a_expr) comp_operator a_expr %expand { $$ = make_binop($*, COMPARE); }
@@ -477,7 +483,7 @@ key_datum : expression ':'! expression { $$ = $^(PAIR, $*); }
 key_datum_list : key_datum (','! key_datum)* (','!)?
                ;
 
-dict_display : CURLY! (key_datum_list)? ECURLY! { $$ = $^(DICT_DISP); }
+dict_display : CURLY! ECURLY! { $$ = $^(DICT_DISP); }
              | CURLY! (key_datum_list) ECURLY! { $$ = $^(DICT_DISP, $key_datum_list); }
              ;
 
@@ -558,7 +564,7 @@ _LETTER : (_LOWER | _UPPER)
         ;
 
 _NEWLINE : "\r"? "\n" ;
-NEWLINE : "\r"? "\n" { if((paren > 0) || (brack > 0) || (curly > 0)) { yy_set_bol(0); YYIGNORE;} }
+NEWLINE : "\r"? "\n" { if((paren > 0) || (brack > 0) || (curly > 0)) {int y = 0; yy_set_bol(y); YYIGNORE;} }
         ;
 
 /* Identifiers */
