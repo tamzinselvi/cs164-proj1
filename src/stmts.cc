@@ -69,27 +69,23 @@ NODE_FACTORY (ClassDef_AST, CLASS);
 class TargExpr_AST : public AST_Tree {
 public:
 
-    void print (ostream& out, int indent) {
-        cout << "(" << "target_list"<< " " << lineNumber ();
-        for_each_child (c, this) {
-            string type = getTokenType(c);
-            if ( type == "tuple"){
-                cout << "tuple";
-            }
-            else if ( type == "list_display"){
-                cout << "list_display";
-            } else {
-                cout << "target";
-            }
-/*            for_each_child (d, c) {
-                out << str(typeid(d));
-                out << endl << setw (indent + 4) << "";
-                d->print (out, indent + 4);
-            } end_for;
-  */      } end_for;
-        cout << ")";
-    }
-    NODE_CONSTRUCTORS (TargExpr_AST, AST_Tree);
+  void print (ostream& out, int indent) {
+    for_each_child (c, this) {
+      string type = getTokenType(c);
+      if ( type == "tuple" || type == "list_display"){
+        out << "(" << "target_list"<< " " << lineNumber () << " ";
+        for_each_child (d, c) {
+          d->print (out, indent + 4);
+          out << " ";
+        } end_for;
+        out << ")";
+      }
+      else {
+        c->print( out, indent + 4);
+      }
+    } end_for;
+  }
+  NODE_CONSTRUCTORS (TargExpr_AST, AST_Tree);
 
 };
 
