@@ -104,19 +104,20 @@
 %token ATTREF "@attributeref"
 %token BINOP "@binop"
 %token BLOCK "@block"
-%token BRACK
-%token EBRACK
+%token BRACK "["
 %token BREAK "@break"
 %token CALL "@call"
 %token CLASS "@class"
 %token COMPARE "@compare"
 %token CONTINUE "@continue"
-%token CURLY
-%token ECURLY
+%token CURLY "{"
 %token DEDENT
 %token DEF "@def"
 %token DICT_DISP "@dict_display"
+%token EBRACK "]"
+%token ECURLY "}"
 %token EMPTY
+%token ENDPAREN ")"
 %token EQUAL
 %token EXPR_LIST "@expr_list"
 %token FOR "@for"
@@ -124,18 +125,17 @@
 %token FUNCTION_TYPE "@function_type"
 %token IF "@if"
 %token IFEXPR "@if_expr"
-%token IS "@is"
 %token IN "@in"
-%token ISNOT "@isnot"
-%token NOTIN "@notin"
 %token INDENT
+%token IS "@is"
+%token ISNOT "@isnot"
 %token LEFT_COMPARE "@left_compare"
 %token LIST_DISP "@list_display"
 %token MODULE "@module"
 %token NATIVE "@native"
+%token NOTIN "@notin"
 %token PAIR "@pair"
-%token PAREN
-%token ENDPAREN
+%token PAREN "("
 %token PRINT "@print"
 %token PRINTLN "@println"
 %token RETURN "@return"
@@ -152,12 +152,6 @@
 %token TYPE_OP
 %token UNOP "@unop"
 %token WHILE "@while"
-%token PAREN "("
-%token ENDPAREN ")"
-%token BRACK "["
-%token EBRACK "]"
-%token CURLY "{"
-%token ECURLY "}"
 
 %%
 
