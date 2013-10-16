@@ -326,7 +326,9 @@ target_list : target (','! target)+ (','!)
             | BRACK! target (','! target)+ EBRACK!
                 { $$ = $^(TARLIST, $*); }
             | target (','! target)+  { $$ = $^(TARLIST, $*); }
-            | (PAREN! | BRACK!)? target ','! (ENDPAREN! | EBRACK!)? { $$ = $^(TARLIST, $*); }
+            | PAREN! target ','! ENDPAREN! { $$ = $^(TARLIST, $*); }
+            | BRACK! target ','! EBRACK! { $$ = $^(TARLIST, $*); }
+            | target ','! { $$ = $^(TARLIST, $*); }
             | (PAREN!) target (ENDPAREN!)
             | target
             | (BRACK!) target (EBRACK!) { $$ = $^(TARLIST, $*); }
@@ -687,7 +689,7 @@ _SAMELINE : _ANY - ('\n');
 * : '\\' (' ' | '\t' )* _NEWLINE (' ' | '\t' )*   %prefer { YYIGNORE; }
   ;
 
-* : '(' %prefer { paren += 1; yyqueue_token(PAREN, 0); }
+* : "(" %prefer { paren += 1; yyqueue_token(PAREN, 0); }
   ;
 
 * : ')' %prefer { paren -= 1; yyqueue_token(ENDPAREN, 0); }

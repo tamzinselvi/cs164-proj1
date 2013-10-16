@@ -16,7 +16,7 @@ print g, h, i, j, k
 a = [42]
 b = a
 c, = a
-(d,) = a
+( d,) = a
 print b, c, d
 [e] = a
 print e
