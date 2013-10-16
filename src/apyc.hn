@@ -122,6 +122,7 @@
 %token FORMALS "@formals_list"
 %token FUNCTION_TYPE "@function_type"
 %token IF "@if"
+%token IFEXPR "@if_expr"
 %token IS "@is"
 %token IN "@in"
 %token ISNOT "@isnot"
@@ -171,13 +172,13 @@ interactive_input : (stmt_list)? NEWLINE!
 file_input : (NEWLINE! | statement)*
            ;
 
-classname : identifier { if(in_class) error(yysource_location(), "No nested classes allowed!"); }
+classhead : "class"! ID { if(in_class) error(yysource_location(), "No nested classes allowed!"); }
           ;
 
-classdef : "class" classname ("of"! BRACK! type_var (',' type_var)* EBRACK!)? ":"! { if ( indents.top() != 0 ){ error(yysource_location(), "cant have indented class");} in_class = true; } suite { in_class = false; }
+classdef : classhead ("of"! BRACK! type_var (',' type_var)* EBRACK!)? ":"! { if ( indents.top() != 0 ){ error(yysource_location(), "cant have indented class");} in_class = true; } suite { in_class = false; }
          { AST_Ptr formal = $^(TYPE_FOR, $type_var);
            formal->set_loc(yysource_location());
-           $$ = $^(CLASS, $classname, formal, $^(BLOCK, $suite));
+           $$ = $^(CLASS, $classhead, formal, $^(BLOCK, $suite));
          }
          ;
 
@@ -208,7 +209,7 @@ funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! { if ( indents.top()
                 (TYPE_OP!)? type0 ":"! func_suite { func_depth -= 1;  $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
         ;
 
-for_stmt : "for"! (target_list | target) "in"! expression_list
+for_stmt : "for"! target_list "in"! expression_list
             ":"! { loop_depth += 1; }  while_suite { loop_depth -= 1; }  else_suite { $$ = $^(FOR, $*); }
             ;
 
@@ -220,9 +221,6 @@ if_stmt : "if"! expression ":"! while_suite
         | "if"! expression ":"! while_suite
             elif_suite { $$ = $^(IF, $*); }
             ;
-
-if_head : "if"! expression ":"! { ifwhilefor += 1; }
-        ;
 
 elif_suite : "elif"! expression ":"! while_suite elif_suite{ $$ = $^(IF, $*); }
            | else_suite
@@ -242,11 +240,6 @@ statement : stmt_list NEWLINE! | compound_stmt
 suite : stmt_list NEWLINE!
       | NEWLINE! INDENT! statement+ DEDENT!
       ;
-
-native_suite : "native"! stringliteral NEWLINE! { $$ = $^(NATIVE, $stringliteral); }
-             | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!
-        { $$ = $^(NATIVE, $stringliteral); }
-             ;
 
 func_suite : stmt_list NEWLINE!
            | NEWLINE! INDENT! statement+ DEDENT
@@ -299,7 +292,6 @@ print_list : expression (','! expression)* (','!) { $$ = $^(EXPR_LIST, $*); }
            ;
 
 println_list : expression (','! expression)* { $$ = $^(EXPR_LIST, $*); }
-             | /* empty */ { $$ = $^(EXPR_LIST); }
              ;
 
 pass_stmt : pass { AST_Ptr tok = $^(STMT_LIST); tok->set_loc(yysource_location()); $$ = tok; }
@@ -334,7 +326,7 @@ target_list : target (','! target)+ (','!)
             | (BRACK!) target (EBRACK!) { $$ = $^(TARLIST, $*); }
             ;
 
-assignment_stmt : (expression_list | target_list | id_type_op type) ASGN! as_stmt1
+assignment_stmt : (expression_list | id_type_op type) ASGN! as_stmt1
                   {
                     if (!($id_type_op.missing())) $$ = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
                     else $$ = $^(ASSIGN, $*);
@@ -373,7 +365,7 @@ and_test : not_test | and_test "and"^ not_test
 or_test : and_test | or_test "or"^ and_test
         ;
 
-conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ = $^(IF, $P1, $P2, $P3); }
+conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ = $^(IFEXPR, $P1, $P2, $P3); }
                        | or_test
                        ;
 
@@ -520,8 +512,7 @@ type : identifier { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
 type_var : TYPE_VAR
          ;
 
-type_id : identifier { $$ = $^(TYPE, $identifier, $^(TYPE_LIST)); }
-        | identifier "of"! BRACK! type_list0 EBRACK! { $$ = $^(TYPE, $*); }
+type_id : identifier "of"! BRACK! type_list0 EBRACK! { $$ = $^(TYPE, $*); }
         | identifier "of"! type { $$ = $^(TYPE, $identifier, $^(TYPE_LIST, $type)); }
         ;
 
@@ -538,15 +529,6 @@ identifier : ID
            ;
 
 id_type_op : ID_TYPE_OP ;
-
-keyword : "and"     | "not"      | "while"
-        | "elif"    | "or"
-        | "else"    | "if"      | "pass"
-        | "break"   | "print"
-        | "class"   | "in"
-        | "continue"| "is"      | "return"
-        | "def"     | "for"
-        ;
 
 illegal_keyword : ( "as"     | "assert" | "del"     | "except"
                   | "exec"   | "from"   | "finally" | "future"
