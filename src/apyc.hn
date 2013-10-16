@@ -206,8 +206,6 @@ parameter_list : (defparameter ","!)* (defparameter (","!)?) { $$ = $^(FORMALS, 
 
 funcdef : "def"! funcname PAREN! (parameter_list) ENDPAREN! { if ( indents.top() != 0 && func_depth == 0 && !in_class ){ error(yysource_location(), "cant have indented method");}  func_depth += 1; }
                 (TYPE_OP!)? type0 ":"! func_suite { func_depth -= 1;  $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $func_suite)); }
-        | "def"! funcname PAREN! (parameter_list) ENDPAREN! {  if ( indents.top() != 0 && func_depth == 0 && !in_class ){error(yysource_location(), "cant have indented method");} func_depth += 1; } (TYPE_OP!)? type0 ":"!
-            native_suite  { func_depth -= 1;    $$ = $^(DEF, $funcname, $parameter_list, $type0, $^(BLOCK, $native_suite)); }
         ;
 
 for_stmt : "for"! (target_list | target) "in"! expression_list
@@ -251,8 +249,11 @@ native_suite : "native"! stringliteral NEWLINE! { $$ = $^(NATIVE, $stringliteral
              ;
 
 func_suite : stmt_list NEWLINE!
-      | NEWLINE! INDENT! statement+ DEDENT
-      ;
+           | NEWLINE! INDENT! statement+ DEDENT
+           | "native"! stringliteral NEWLINE! { $$ = $^(NATIVE, $stringliteral); }
+           | NEWLINE! INDENT! "native"! stringliteral NEWLINE! DEDENT!
+            { $$ = $^(NATIVE, $stringliteral); }
+           ;
 
 while_suite : simple_stmt (";"! simple_stmt)+ (";"!)? NEWLINE! { $$ = $^(STMT_LIST, $*); }
       | simple_stmt (";"!)?
