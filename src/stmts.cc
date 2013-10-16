@@ -9,22 +9,10 @@
 #include "ast.h"
 #include "apyc-parser.hh"
 #include <string>
+#include <sstream>
 using namespace std;
 
-string getTokenType(const AST_Ptr& token)
-{
-    std::stringstream buffer;
-    token->print(buffer, 0);
-    string print = buffer.str();
-    size_t pLoc = print.find("(");
-    size_t spLoc = print.find(" ");
-    
-    if (pLoc != string::npos)
-        if (spLoc != string::npos)
-            return print.substr(pLoc + 1, spLoc - (pLoc + 1));
-    
-    return "";
-}
+string getTokenType(const AST_Ptr& token);
 
 /*****   MODULE    *****/
 
@@ -82,16 +70,16 @@ class TargExpr_AST : public AST_Tree {
 public:
 
     void print (ostream& out, int indent) {
-        out << "(" << "target_list"<< " " << lineNumber ();
+        cout << "(" << "target_list"<< " " << lineNumber ();
         for_each_child (c, this) {
             string type = getTokenType(c);
             if ( type == "tuple"){
-                out << "tuple";
+                cout << "tuple";
             }
             else if ( type == "list_display"){
-                out << "list_display";
+                cout << "list_display";
             } else {
-                out << "target";
+                cout << "target";
             }
 /*            for_each_child (d, c) {
                 out << str(typeid(d));
@@ -99,7 +87,7 @@ public:
                 d->print (out, indent + 4);
             } end_for;
   */      } end_for;
-        out << ")";
+        cout << ")";
     }
     NODE_CONSTRUCTORS (TargExpr_AST, AST_Tree);
 

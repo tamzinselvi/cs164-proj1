@@ -135,7 +135,7 @@
 %token NATIVE "@native"
 %token NOTIN "@notin"
 %token PAIR "@pair"
-%token PAREN
+%token PAREN "("
 %token ENDPAREN
 %token EXPRTARG
 %token PRINT "@print"
