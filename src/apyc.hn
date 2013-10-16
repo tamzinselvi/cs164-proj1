@@ -313,7 +313,7 @@ target : identifier
 
 target_list : target (','! target)+ (','!)
                 { $$ = $^(TARLIST, $*); }
-            | PAREN! target (','! target)+ (','!) ENDPAREN!
+            | '('! target (','! target)+ (','!) ')'!
                 { $$ = $^(TARLIST, $*); }
             | BRACK! target (','! target)+ (','!) EBRACK!
                 { $$ = $^(TARLIST, $*); }
@@ -674,22 +674,22 @@ _SAMELINE : _ANY - ('\n');
 * : '\\' (' ' | '\t' )* _NEWLINE (' ' | '\t' )*   %prefer { YYIGNORE; }
   ;
 
-* : '(' %prefer { paren += 1; yyqueue_token(PAREN, 0); }
+PAREN : '(' %prefer { paren += 1; }
       ;
 
-* : ')' %prefer { paren -= 1; yyqueue_token(ENDPAREN, 0); }
+ENDPAREN : ')' %prefer  { paren -= 1; }
   ;
 
-* : '[' %prefer { brack += 1; yyqueue_token(BRACK, 0); }
+BRACK : '[' %prefer { brack += 1; }
   ;
 
-* : ']' %prefer { brack -= 1; yyqueue_token(EBRACK, 0); }
+EBRACK : ']' %prefer { brack -= 1; }
   ;
 
-* : '{' %prefer { curly += 1; yyqueue_token(CURLY, 0); }
+CURLY : '{' %prefer { curly += 1; }
   ;
 
-* : '}' %prefer { curly -= 1; yyqueue_token(ECURLY, 0); }
+ECURLY : '}' %prefer { curly -= 1; }
   ;
 
 /* Normally, throw away whitespace other than newline. */
