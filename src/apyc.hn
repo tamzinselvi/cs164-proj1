@@ -37,7 +37,7 @@
    *  TOKEN. */
   static AST_Ptr make_id (AST_Ptr& token);
 
-  void validTargetList(const AST_Ptr& token);
+  bool validTargetList(const AST_Ptr& token);
   string getTokenType(const AST_Ptr& token);
 
   static stack<int> indents;
@@ -135,7 +135,9 @@
 %token NATIVE "@native"
 %token NOTIN "@notin"
 %token PAIR "@pair"
-%token PAREN "("
+%token PAREN
+%token ENDPAREN
+%token EXPRTARG
 %token PRINT "@print"
 %token PRINTLN "@println"
 %token RETURN "@return"
@@ -333,8 +335,11 @@ target_list : target (','! target)+ (','!)
 assignment_stmt : (expression_list | id_type_op type) ASGN! as_stmt1
                   {
                     if (!($id_type_op.missing())) $$ = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
+                    else if (!($expression_list.missing())) {
+                        validTargetList($expression_list.value());
+                        $$ = $^(ASSIGN, $^(EXPRTARG, $expression_list), $as_stmt1);
+                    }
                     else $$ = $^(ASSIGN, $*);
-                     if (!($expression_list.missing())) validTargetList($expression_list.value());
                   }
                 ;
 
@@ -787,19 +792,19 @@ void processIndent( const char* text)
   }
 }
 
-void validTargetList(const AST_Ptr& token)
+bool validTargetList(const AST_Ptr& token)
 {
   string type = getTokenType(token);
-  string type1;
   bool valid = true;
-  if (type == "expr_list" || type == "list_diplay" || type == "tuple")
+  if (type == "expr_list" || type == "list_display" || type == "tuple")
     for_each_child (c, token) {
         type = getTokenType(c);
         if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
     } end_for;
   else if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
 
-  if (!valid) error(yysource_location(), "assignment @expr_list not equivalent to @target_list");
+  if (!valid)  error(yysource_location(), "assignment @expr_list not equivalent to @target_list");
+  return valid;
 }
 
 string getTokenType(const AST_Ptr& token)
