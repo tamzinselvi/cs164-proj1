@@ -319,7 +319,7 @@ target : identifier
 
 target_list : target (','! target)+ (','!)
                 { $$ = $^(TARLIST, $*); }
-            | '('! target (','! target)+ (','!) ')'!
+            | PAREN! target (','! target)+ (','!) ENDPAREN!
                 { $$ = $^(TARLIST, $*); }
             | BRACK! target (','! target)+ (','!) EBRACK!
                 { $$ = $^(TARLIST, $*); }
