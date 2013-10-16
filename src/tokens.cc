@@ -136,18 +136,37 @@ private:
      *  construction of a node or token.] */
     Int_Token* post_make () {
         const char* s = as_chars() ;
+        int base = 10;
         if (strlen(s) > 1 && (tolower(s[1]) == 'x')) {
             value = strtol(s, NULL, 16);
+            base = 16;
         }
         else if (strlen(s) > 1 && s[0] == '0') {
             value = strtol(s, NULL, 8);
+            base = 8;
         }
         else {
             value = atoi(s);
         }
         long bound = 1073741824;
         if ((value > bound) || (value < 0)) {
-            error(s, "All integer literals must be in the range [0, 2^30].");
+            switch (base) {
+                case 10:
+                    error(s, "All decimals must be in the range [0, 2^30].");
+                    break;
+                    
+                case 16:
+                    error(s, "All hexadecimals must be in the range [0, 2^30].");
+                    break;
+                    
+                case 8:
+                    error(s, "All octals must be in the range [0, 2^30].");
+                    break;
+                    
+                default:
+                    error(s, "All integer literals must be in the range [0, 2^30].");
+                    break;
+            }
         }
         return this;
     }
