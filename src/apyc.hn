@@ -782,6 +782,7 @@ void processIndent( const char* text)
       }
       if ( length != indents.top()){
         error(yysource_location(), "inconsistent indentation");
+        break;
       }
       if ( length == indents.top() ) {
         indentnum -= 1;
