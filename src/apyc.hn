@@ -334,7 +334,7 @@ assignment_stmt : (expression_list | id_type_op type) ASGN! as_stmt1
                   {
                     if (!($id_type_op.missing())) $$ = $^(ASSIGN, $^(TYPED_ID, $id_type_op, $type), $as_stmt1);
                     else $$ = $^(ASSIGN, $*);
-                    if (!($expression_list.missing())) validTargetList($expression_list.value());
+                     if (!($expression_list.missing())) validTargetList($expression_list.value());
                   }
                 ;
 
@@ -374,7 +374,6 @@ conditional_expression : P2=or_test "if"! P1=or_test "else"! P3=expression { $$ 
                        ;
 
 expression : conditional_expression
-//           | NEWLINE INDENT conditional_expression
            ;
 
 comp_operator : '<' | '>' | EQUAL | ">=" | "<=" | "!="
@@ -675,8 +674,8 @@ _SAMELINE : _ANY - ('\n');
 * : '\\' (' ' | '\t' )* _NEWLINE (' ' | '\t' )*   %prefer { YYIGNORE; }
   ;
 
-* : "(" %prefer { paren += 1; yyqueue_token(PAREN, 0); }
-  ;
+* : '(' %prefer { paren += 1; yyqueue_token(PAREN, 0); }
+      ;
 
 * : ')' %prefer { paren -= 1; yyqueue_token(ENDPAREN, 0); }
   ;
@@ -790,11 +789,12 @@ void processIndent( const char* text)
 void validTargetList(const AST_Ptr& token)
 {
   string type = getTokenType(token);
+  string type1;
   bool valid = true;
-  if (type == "expr_list")
+  if (type == "expr_list" || type == "list_diplay" || type == "tuple")
     for_each_child (c, token) {
-      type = getTokenType(c);
-      if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
+        type = getTokenType(c);
+        if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
     } end_for;
   else if (type != "id" && type != "attributeref" && type != "subscription" && type != "slicing" && type != "typed_id") valid = false;
 

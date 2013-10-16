@@ -121,6 +121,7 @@ private:
 
 TOKEN_FACTORY(Simple_Token, SIMPLE_STMT);
 
+
 /** Represents an integer literal. */
 class Int_Token : public AST_Token {
 private:

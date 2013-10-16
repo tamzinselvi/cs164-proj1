@@ -16,7 +16,8 @@ print g, h, i, j, k
 a = [42]
 b = a
 c, = a
-( d,) = a
+(d,) = a
 print b, c, d
+i::int = 0
 [e] = a
 print e
