@@ -379,8 +379,13 @@ expression : conditional_expression
            ;
 
 comp_operator : '<' | '>' | EQUAL | ">=" | "<=" | "!="
-              | "is not" { $$ = AST::make_token(ID, 5, "isnot"); } | "not in" { $$ = AST::make_token(ID, 5, "notin"); } | "is" | "in"
+              | isnot { $$ = AST::make_token(ID, 5, "isnot"); } | notin { $$ = AST::make_token(ID, 5, "notin"); } | "is" | "in"
               ;
+isnot : "is" WS? "not"
+      ;
+
+notin : "not" WS? "in"
+      ;
 
 comparison : (left_comparison | a_expr) comp_operator a_expr %expand { $$ = make_binop($*, COMPARE); }
            | a_expr
@@ -700,8 +705,8 @@ _SAMELINE : _ANY - ('\n');
   ;
 
 /* Normally, throw away whitespace other than newline. */
-* : (' ' | '\t' | '\r')+
-  ;
+WS : (' ' | '\t' | '\r')+ { YYIGNORE; }
+   ;
 
 %%
 
