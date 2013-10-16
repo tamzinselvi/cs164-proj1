@@ -152,6 +152,12 @@
 %token TYPE_OP
 %token UNOP "@unop"
 %token WHILE "@while"
+%token PAREN "("
+%token ENDPAREN ")"
+%token BRACK "["
+%token EBRACK "]"
+%token CURLY "{"
+%token ECURLY "}"
 
 %%
 
@@ -352,6 +358,7 @@ simple_stmt : expression_stmt
             | break_stmt
             | continue_stmt
             | pass_stmt
+            | PAREN
             ;
 
 expression_list : expression (','! expression)+ (','!) { $$ = $^(TUPLE, $*); }
